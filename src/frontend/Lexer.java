@@ -89,6 +89,12 @@ public class Lexer {
             case '\"':
                 ch = (char) reader.read();//一定会匹配吗？?
                 while (ch != '"') {
+                    /*
+                    词法分析作业中，要求将\t等转译字符原样输出，即要输出\和t
+                    但这样做，实际的value将错误
+                    if(ch=='\\'){
+                        ch = scanTrans();
+                    }*/
                     symbol.append(ch);
                     ch = (char) reader.read();
                 }
@@ -97,6 +103,9 @@ public class Lexer {
             case '\'':
                 ch = (char) reader.read();//一定会匹配吗？?
                 while (ch != '\'') {
+                    /*if(ch=='\\'){
+                        ch = scanTrans();
+                    }*/
                     symbol.append(ch);
                     ch = (char) reader.read();
                 }
@@ -133,6 +142,22 @@ public class Lexer {
                 reader.unread(ch);
                 scanSingleSymbol();
         }
+    }
+
+    public char scanTrans() throws IOException {
+        char ch = (char) reader.read();
+        return switch (ch) {
+            case 'a' -> 7;
+            case 'b' -> 8;
+            case 't' -> 9;
+            case 'n' -> 10;
+            case 'v' -> 11;
+            case 'f' -> 12;
+            case '\"' -> 34;
+            case '\'' -> 39;
+            case '\\' -> 92;
+            default -> '\0';
+        };
     }
 
     public void scanSlash() throws IOException {
