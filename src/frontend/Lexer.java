@@ -36,6 +36,7 @@ public class Lexer {
                 scanSymbol();
             }
         }
+        reader.close();
     }
 
     public void scanNumber() throws IOException {
@@ -91,10 +92,10 @@ public class Lexer {
                 while (ch != '"') {
                     /*
                     词法分析作业中，要求将\t等转译字符原样输出，即要输出\和t
-                    但这样做，实际的value将错误
-                    if(ch=='\\'){
+                    但这样做，实际的value将错误*/
+                    if (ch == '\\') {
                         ch = scanTrans();
-                    }*/
+                    }
                     symbol.append(ch);
                     ch = (char) reader.read();
                 }
@@ -103,9 +104,9 @@ public class Lexer {
             case '\'':
                 ch = (char) reader.read();//一定会匹配吗？?
                 while (ch != '\'') {
-                    /*if(ch=='\\'){
+                    if (ch == '\\') {
                         ch = scanTrans();
-                    }*/
+                    }
                     symbol.append(ch);
                     ch = (char) reader.read();
                 }
