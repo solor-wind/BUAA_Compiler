@@ -1,4 +1,4 @@
-import frontend.Lexer;
+import frontend.lexer.Lexer;
 
 import java.io.FileWriter;
 import java.io.IOException;
