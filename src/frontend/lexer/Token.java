@@ -47,4 +47,8 @@ public class Token {
         }
         return token + " " + lex;
     }
+
+    public boolean is(TokenType type) {
+        return token == type;
+    }
 }

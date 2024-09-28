@@ -13,6 +13,10 @@ public class Lexer {
 
     private final LinkedList<Token> errors;
 
+    public LinkedList<Token> getTokens() {
+        return tokens;
+    }
+
     public Lexer(String filename) throws FileNotFoundException {
         tokens = new LinkedList<>();
         reader = new PushbackReader(new FileReader(filename));
@@ -118,10 +122,12 @@ public class Lexer {
             case '|':
                 if (!reader.ready()) {
                     errors.add(new Token(TokenType.ERROR, "|", line));
+                    tokens.add(new Token(TokenType.ERROR, "|", line));
                 }
                 ch = (char) reader.read();
                 if (ch != '|') {
                     errors.add(new Token(TokenType.ERROR, "|", line));
+                    tokens.add(new Token(TokenType.ERROR, "|", line));
                     reader.unread(ch);
                 } else {
                     tokens.add(new Token(TokenType.OR, "||", line));
@@ -130,10 +136,12 @@ public class Lexer {
             case '&':
                 if (!reader.ready()) {
                     errors.add(new Token(TokenType.ERROR, "&", line));
+                    tokens.add(new Token(TokenType.ERROR, "&", line));
                 }
                 ch = (char) reader.read();
                 if (ch != '&') {
                     errors.add(new Token(TokenType.ERROR, "&", line));
+                    tokens.add(new Token(TokenType.ERROR, "&", line));
                     reader.unread(ch);
                 } else {
                     tokens.add(new Token(TokenType.AND, "&&", line));
