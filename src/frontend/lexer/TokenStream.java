@@ -31,4 +31,12 @@ public class TokenStream {
         }
         return tokens.get(pos + i);
     }
+
+    public int getPos() {
+        return pos;
+    }
+
+    public void setPos(int pos) {
+        this.pos = pos;
+    }
 }

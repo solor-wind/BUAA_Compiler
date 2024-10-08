@@ -260,7 +260,10 @@ public class Parser {
                 if (tokens.peek().is(TokenType.SEMICN)) {
                     //stmt.addIdent(tokens.next());
                 } else {
-                    stmt.addExp(parseExp());
+                    Exp exp = tryExp();
+                    if (exp != null) {
+                        stmt.addExp(exp);
+                    }
                 }
                 //error i
                 if (!tokens.peek().is(TokenType.SEMICN)) {
@@ -418,10 +421,9 @@ public class Parser {
             unaryExp.setIdent(tokens.next());
             unaryExp.setLparent(tokens.next());//(
             if (!tokens.peek().is(TokenType.RPARENT)) {
-                if (tokens.peek().is(TokenType.LPARENT) || tokens.peek().is(TokenType.IDENFR)
-                        || tokens.peek().is(TokenType.INTCON) || tokens.peek().is(TokenType.CHRCON)
-                        || tokens.peek().is(TokenType.PLUS) || tokens.peek().is(TokenType.MINU) || tokens.peek().is(TokenType.NOT)) {
-                    unaryExp.setFuncRParams(parseFuncRParams());
+                FuncRParams funcRParams = tryFuncRParams();
+                if (funcRParams != null) {
+                    unaryExp.setFuncRParams(funcRParams);
                 } else {
                     //error j
                     addError("j");
@@ -526,6 +528,15 @@ public class Parser {
         return new ConstExp(parseAddExp());/*TODO必须是常量*/
     }
 
+    public boolean inExpFirst() {
+        if (tokens.peek() == null) {
+            return false;
+        }
+        return tokens.peek().is(TokenType.LPARENT) || tokens.peek().is(TokenType.IDENFR)
+                || tokens.peek().is(TokenType.INTCON) || tokens.peek().is(TokenType.CHRCON)
+                || tokens.peek().is(TokenType.PLUS) || tokens.peek().is(TokenType.MINU) || tokens.peek().is(TokenType.NOT);
+    }
+
     public void addError(String error) {
         if (tokens.peek(-1) == null) {
             errors.put(0, error);
@@ -548,5 +559,179 @@ public class Parser {
             sb.append(i + " " + errors.get(i) + "\n");
         }
         return sb.toString();
+    }
+
+    public Exp tryExp() {
+        if (!inExpFirst()) {
+            return null;
+        }
+        return new Exp(tryAddExp());
+    }
+
+    public LVal tryLVal() {
+        //支持回溯
+        int pos = tokens.getPos();
+        if (!tokens.peek().is(TokenType.IDENFR)) {
+            return null;
+        }
+        LVal lVal = new LVal(tokens.next());
+        if (tokens.peek().is(TokenType.LBRACK)) {
+            lVal.setLbrack(tokens.next());
+            Exp exp = tryExp();
+            if (exp != null) {
+                lVal.setExp(exp);
+            } else {
+                tokens.setPos(pos);
+                return null;
+            }
+            //error k
+            if (!tokens.peek().is(TokenType.RBRACK)) {
+                addError("k");
+            } else {
+                lVal.setRbrack(tokens.next());
+            }
+        }
+        return lVal;
+    }
+
+    public PrimaryExp tryPrimaryExp() {
+        //支持回溯
+        PrimaryExp primaryExp = null;
+        int pos = tokens.getPos();
+        if (tokens.peek().is(TokenType.LPARENT)) {
+            primaryExp = new PrimaryExp();
+            primaryExp.setLparent(tokens.next());
+            Exp exp = tryExp();
+            if (exp != null) {
+                primaryExp.setExp(exp);
+                //error j
+                if (!tokens.peek().is(TokenType.RPARENT)) {
+                    addError("j");
+                } else {
+                    primaryExp.setRparent(tokens.next());
+                }
+            } else {
+                tokens.setPos(pos);
+            }
+        } else if (tokens.peek().is(TokenType.INTCON)) {
+            primaryExp = new PrimaryExp(new IntConst(tokens.next()));
+        } else if (tokens.peek().is(TokenType.CHRCON)) {
+            primaryExp = new PrimaryExp(new CharConst(tokens.next()));
+        } else {
+            LVal lVal = tryLVal();
+            if (lVal != null) {
+                primaryExp = new PrimaryExp(lVal);
+            }
+        }
+        return primaryExp;
+    }
+
+    public UnaryExp tryUnaryExp() {
+        //支持回溯
+        UnaryExp unaryExp = new UnaryExp();
+        int pos = tokens.getPos();
+        while (tokens.peek().is(TokenType.NOT) || tokens.peek().is(TokenType.PLUS) || tokens.peek().is(TokenType.MINU)) {
+            unaryExp.addUnaryOp(new UnaryOp(tokens.next()));
+        }
+        if (tokens.peek().is(TokenType.IDENFR) && tokens.peek(1).is(TokenType.LPARENT)) {
+            unaryExp.setIdent(tokens.next());
+            unaryExp.setLparent(tokens.next());//(
+            if (!tokens.peek().is(TokenType.RPARENT)) {
+                FuncRParams funcRParams = tryFuncRParams();
+                if (funcRParams != null) {
+                    unaryExp.setFuncRParams(funcRParams);
+                } else {
+                    //error j
+                    addError("j");
+                    return unaryExp;
+                }
+            }
+            //error j
+            if (!tokens.peek().is(TokenType.RPARENT)) {
+                addError("j");
+            } else {
+                unaryExp.setRparent(tokens.next());
+            }
+        } else {
+            PrimaryExp primaryExp = tryPrimaryExp();
+            if (primaryExp != null) {
+                unaryExp.setPrimaryExp(primaryExp);
+            } else {
+                tokens.setPos(pos);
+                return null;
+            }
+        }
+        return unaryExp;
+    }
+
+    public FuncRParams tryFuncRParams() {
+        //支持回溯
+        FuncRParams funcRParams = new FuncRParams();
+        int pos = tokens.getPos();
+        Exp exp = tryExp();
+        if (exp != null) {
+            funcRParams.addExp(exp);
+        } else {
+            return null;
+        }
+        while (tokens.peek().is(TokenType.COMMA)) {
+            funcRParams.addComma(tokens.next());
+            exp = tryExp();
+            if (exp != null) {
+                funcRParams.addExp(exp);
+            } else {
+                tokens.setPos(pos);
+                return null;
+            }
+        }
+        return funcRParams;
+    }
+
+    public MulExp tryMulExp() {
+        MulExp mulExp = new MulExp();
+        int pos = tokens.getPos();
+        UnaryExp unaryExp = tryUnaryExp();
+        if (unaryExp != null) {
+            mulExp.addUnaryExp(unaryExp);
+        } else {
+            return null;
+        }
+        while (tokens.peek().is(TokenType.MULT) ||
+                tokens.peek().is(TokenType.DIV) || tokens.peek().is(TokenType.MOD)) {
+            mulExp.addOp(tokens.next());
+            unaryExp = tryUnaryExp();
+            if (unaryExp != null) {
+                mulExp.addUnaryExp(unaryExp);
+            } else {
+                tokens.setPos(pos);
+                return null;
+            }
+        }
+        return mulExp;
+    }
+
+    public AddExp tryAddExp() {
+        if (!inExpFirst()) {
+            return null;
+        }
+        AddExp addExp = new AddExp();
+        int pos = tokens.getPos();
+        MulExp mulExp = tryMulExp();
+        if (mulExp != null) {
+            addExp.addmulExp(mulExp);
+        } else {
+            return null;
+        }
+        while (tokens.peek().is(TokenType.PLUS) || tokens.peek().is(TokenType.MINU)) {
+            addExp.addOp(tokens.next());
+            mulExp = tryMulExp();
+            if (mulExp != null) {
+                addExp.addmulExp(mulExp);
+            } else {
+                tokens.setPos(pos);
+                return null;
+            }
+        }
+        return addExp;
     }
 }
