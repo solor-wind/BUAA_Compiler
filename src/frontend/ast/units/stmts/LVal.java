@@ -76,8 +76,14 @@ public class LVal {
         Symbol symbol = symbolTable.getSymbol(ident.getValue());
         if (symbol instanceof VarSym varSym) {
             if (varSym.is("ConstChar")) {
+                if (varSym.getInitVal() instanceof Integer integer) {
+                    return (char) integer.intValue();
+                }
                 return (Character) varSym.getInitVal();
             } else if (varSym.is("IntChar")) {
+                if (varSym.getInitVal() instanceof Character character) {
+                    return (int) character;
+                }
                 return (Integer) varSym.getInitVal();
             }
         }

@@ -137,10 +137,12 @@ public class Parser {
             initVal.setStringConst(tokens.next());
         } else if (tokens.peek().is(TokenType.LBRACE)) {
             initVal.setLbrace(tokens.next());//{
-            initVal.addExp(parseExp());
-            while (tokens.peek().is(TokenType.COMMA)) {
-                initVal.addComma(tokens.next());
+            if (!tokens.peek().is(TokenType.RBRACE)) {
                 initVal.addExp(parseExp());
+                while (tokens.peek().is(TokenType.COMMA)) {
+                    initVal.addComma(tokens.next());
+                    initVal.addExp(parseExp());
+                }
             }
             initVal.setRbrace(tokens.next());//}
         } else {
