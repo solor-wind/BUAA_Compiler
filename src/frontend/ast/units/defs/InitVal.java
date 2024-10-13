@@ -2,6 +2,7 @@ package frontend.ast.units.defs;
 
 import frontend.ast.units.stmts.Exp;
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -15,6 +16,10 @@ public class InitVal {
 
     public void addExp(Exp exp) {
         exps.add(exp);
+    }
+
+    public LinkedList<Exp> getExps() {
+        return exps;
     }
 
     public void addComma(Token comma) {
@@ -53,5 +58,17 @@ public class InitVal {
         }
         sb.append(rbrace + "\n");
         return sb.toString() + "<InitVal>";
+    }
+
+    public boolean checkError(SymbolTable symbolTable) {
+        boolean flag = false;
+        if (stringConst != null) {
+            return flag;
+        } else {
+            for (Exp exp : exps) {
+                flag = flag || exp.checkError(symbolTable);
+            }
+        }
+        return flag;
     }
 }

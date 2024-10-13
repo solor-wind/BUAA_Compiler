@@ -2,6 +2,7 @@ package frontend.ast.units.exps;
 
 import frontend.ast.units.stmts.Cond;
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -30,6 +31,12 @@ public class LOrExp extends Cond {
                 sb.append("\n" + it2.next() + "\n");
             }
         }
-        return sb.toString()+"\n<Cond>";
+        return sb.toString() + "\n<Cond>";
+    }
+
+    public void checkError(SymbolTable symbolTable) {
+        for (LAndExp lAndExp : lAndExps) {
+            lAndExp.checkError(symbolTable);
+        }
     }
 }

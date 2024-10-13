@@ -2,6 +2,8 @@ package frontend.ast.units.defs;
 
 import frontend.ast.units.stmts.BlockItem;
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -45,5 +47,11 @@ public class ConstDecl implements Decl, BlockItem {
         }
         sb.append(semicn + "\n");
         return sb.toString() + "<ConstDecl>";
+    }
+
+    public void checkError(SymbolTable symbolTable) {
+        for (ConstDef constDef : constDefs) {
+            constDef.checkError(symbolTable, BType);
+        }
     }
 }

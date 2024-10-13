@@ -2,6 +2,7 @@ package frontend.ast.units.defs;
 
 import frontend.ast.units.exps.ConstExp;
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -57,5 +58,28 @@ public class ConstInitVal {
         }
         sb.append(rbrace + "\n");
         return sb.toString() + "<ConstInitVal>";
+    }
+
+    public boolean checkError(SymbolTable symbolTable) {
+        boolean flag = false;
+        if (stringConst != null) {
+            return flag;
+        }
+        for (ConstExp constExp : constExps) {
+            flag = flag || constExp.checkError(symbolTable);
+        }
+        return flag;
+    }
+
+    public LinkedList<Object> evaluateArray(SymbolTable symbolTable) {
+        LinkedList<Object> list = new LinkedList<>();
+        for (ConstExp constExp : constExps) {
+            list.add(constExp.evaluate(symbolTable));
+        }
+        return list;
+    }
+
+    public Object evaluateVar(SymbolTable symbolTable) {
+        return constExps.getFirst().evaluate(symbolTable);
     }
 }

@@ -18,6 +18,10 @@ public class FuncRParams {
         commas.add(comma);
     }
 
+    public LinkedList<Exp> getExps() {
+        return exps;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

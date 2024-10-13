@@ -1,6 +1,7 @@
 package frontend.ast.units.exps;
 
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -30,5 +31,25 @@ public class MulExp {
             }
         }
         return sb.toString();
+    }
+
+    public boolean checkError(SymbolTable symbolTable) {
+        boolean flag = false;
+        for (UnaryExp unaryExp : unaryExps) {
+            flag = flag || unaryExp.checkError(symbolTable);
+        }
+        return flag;
+    }
+
+    public int evaluate(SymbolTable symbolTable) {
+        int ans = 1;
+        for (UnaryExp unaryExp : unaryExps) {
+            ans *= unaryExp.evaluate(symbolTable);
+        }
+        return ans;
+    }
+
+    public String getType() {
+        return unaryExps.getFirst().getType();
     }
 }

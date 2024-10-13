@@ -1,6 +1,7 @@
 import frontend.ast.Parser;
 import frontend.lexer.Lexer;
 import frontend.lexer.TokenStream;
+import frontend.symbols.GetSymTable;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,13 +14,15 @@ public class Compiler {
         TokenStream tokenStream = new TokenStream(new ArrayList<>(lexer.getTokens()));
         Parser parser = new Parser(tokenStream);
         parser.parse();
-        if (parser.isError()) {
-            FileWriter writer = new FileWriter("error.txt");
-            writer.write(parser.toString());
+        GetSymTable getSymTable = new GetSymTable(parser.getCompUnit(), parser.getErrors());
+        getSymTable.parse();
+        if (!GetSymTable.isError()) {
+            FileWriter writer = new FileWriter("symbol.txt");
+            writer.write(GetSymTable.root.toString());
             writer.close();
         } else {
-            FileWriter writer = new FileWriter("parser.txt");
-            writer.write(parser.toString());
+            FileWriter writer = new FileWriter("error.txt");
+            writer.write(getSymTable.outError());
             writer.close();
         }
     }

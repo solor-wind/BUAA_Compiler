@@ -1,6 +1,8 @@
 package frontend.ast.units.stmts;
 
 import frontend.lexer.Token;
+import frontend.symbols.GetSymTable;
+import frontend.symbols.SymbolTable;
 
 public class ForStmt {
     private LVal lVal;
@@ -13,7 +15,8 @@ public class ForStmt {
         this.exp = exp;
     }
 
-    public ForStmt(){}
+    public ForStmt() {
+    }
 
     public void setlVal(LVal lVal) {
         this.lVal = lVal;
@@ -29,6 +32,17 @@ public class ForStmt {
 
     @Override
     public String toString() {
-        return lVal+"\n"+assign+"\n"+exp+"\n<ForStmt>";
+        return lVal + "\n" + assign + "\n" + exp + "\n<ForStmt>";
+    }
+
+    public void checkError(SymbolTable symbolTable) {
+        if (!lVal.checkError(symbolTable)) {
+            //error h
+            if (symbolTable.getSymbol(lVal.getIdent().getValue()).is("Const")) {
+                GetSymTable.addError(lVal.getIdent().getLine(), "h");
+            }
+        }
+
+        exp.checkError(symbolTable);
     }
 }

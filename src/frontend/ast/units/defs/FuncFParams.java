@@ -17,6 +17,10 @@ public class FuncFParams {
         commas.add(comma);
     }
 
+    public LinkedList<FuncFParam> getFuncFParams() {
+        return funcFParams;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

@@ -19,6 +19,14 @@ public class Parser {
         errors = new TreeMap<>();
     }
 
+    public CompUnit getCompUnit() {
+        return compUnit;
+    }
+
+    public TreeMap<Integer, String> getErrors() {
+        return errors;
+    }
+
     public void parse() {
         //int a
         //const int a
@@ -208,6 +216,8 @@ public class Parser {
         }
     }
 
+    private int forFloor = 0;
+
     public Stmt parseStmt() {
         Stmt stmt = new Stmt(null);
         boolean iskey = true;
@@ -243,10 +253,16 @@ public class Parser {
                     stmt.setForStmt2(parseForStmt());
                 }
                 stmt.addIdent(tokens.next());//)
+                forFloor++;
                 stmt.setStmt1(parseStmt());
+                forFloor--;
                 break;
             case BREAKTK:
             case CONTINUETK:
+                //error m
+                if (forFloor == 0) {
+                    errors.put(tokens.peek().getLine(), "m");
+                }
                 stmt.setKeyword(tokens.next());
                 //error i
                 if (!tokens.peek().is(TokenType.SEMICN)) {
@@ -302,61 +318,59 @@ public class Parser {
         if (iskey) {
             return stmt;
         }
-        boolean isAssign = false;
-        int keyPos = 0;
-        for (int i = 0; tokens.peek(i) != null; i++) {
-            if (tokens.peek(i).is(TokenType.ASSIGN)) {
-                isAssign = true;
-                if (tokens.peek(i + 1).is(TokenType.GETINTTK) || tokens.peek(i + 1).is(TokenType.GETCHARTK)) {
-                    keyPos = i + 1;
+        int pos = tokens.getPos();
+        LVal lVal = tryLVal();
+        if (lVal != null && tokens.peek().is(TokenType.ASSIGN)) {
+            stmt.setLVal(lVal);
+            stmt.addIdent(tokens.next());//=
+            if (tokens.peek().is(TokenType.GETINTTK) || tokens.peek().is(TokenType.GETCHARTK)) {
+                stmt.setKeyword(tokens.next());
+                stmt.addIdent(tokens.next());//(
+                //error j
+                if (!tokens.peek().is(TokenType.RPARENT)) {
+                    addError("j");
+                } else {
+                    stmt.addIdent(tokens.next());
+                }
+                //error i
+                if (!tokens.peek().is(TokenType.SEMICN)) {
+                    addError("i");
+                } else {
+                    stmt.addIdent(tokens.next());
+                }
+                return stmt;
+            } else {
+                stmt.addExp(parseExp());
+                //error i
+                if (!tokens.peek().is(TokenType.SEMICN)) {
+                    addError("i");
+                } else {
+                    stmt.addIdent(tokens.next());
+                }
+                return stmt;
+            }
+        } else {
+            tokens.setPos(pos);
+            if (tokens.peek().is(TokenType.SEMICN)) {
+                stmt.addIdent(tokens.next());
+                return stmt;
+            } else {
+                Exp exp = tryExp();
+                if (exp != null) {
+                    stmt.addExp(exp);
+                    //error i
+                    if (!tokens.peek().is(TokenType.SEMICN)) {
+                        addError("i");
+                    } else {
+                        stmt.addIdent(tokens.next());
+                    }
+                    return stmt;
+                } else {
+                    addError("i");
+                    return stmt;
                 }
             }
-            if (tokens.peek(i).is(TokenType.SEMICN)) {
-                break;
-            }
         }
-        if (!isAssign) {
-            if (!tokens.peek().is(TokenType.SEMICN)) {
-                stmt.addExp(parseExp());
-            }
-            //error i
-            if (!tokens.peek().is(TokenType.SEMICN)) {
-                addError("i");
-            } else {
-                stmt.addIdent(tokens.next());
-            }
-            return stmt;
-        }
-        if (keyPos != 0) {
-            stmt.setKeyword(tokens.peek(keyPos));
-            stmt.setLVal(parseLVal());
-            stmt.addIdent(tokens.next());
-            tokens.next();
-            stmt.addIdent(tokens.next());//(
-            //error j
-            if (!tokens.peek().is(TokenType.RPARENT)) {
-                addError("j");
-            } else {
-                stmt.addIdent(tokens.next());
-            }
-            //error i
-            if (!tokens.peek().is(TokenType.SEMICN)) {
-                addError("i");
-            } else {
-                stmt.addIdent(tokens.next());
-            }
-            return stmt;
-        }
-        stmt.setLVal(parseLVal());
-        stmt.addIdent(tokens.next());//=
-        stmt.addExp(parseExp());
-        //error i
-        if (!tokens.peek().is(TokenType.SEMICN)) {
-            addError("i");
-        } else {
-            stmt.addIdent(tokens.next());
-        }
-        return stmt;
     }
 
     public ForStmt parseForStmt() {

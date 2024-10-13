@@ -1,11 +1,12 @@
 package frontend.ast.units.exps;
 
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 
-public class AddExp{
+public class AddExp {
     //左递归文法改写
     LinkedList<MulExp> mulExps = new LinkedList<>();
     LinkedList<Token> ops = new LinkedList<>();
@@ -30,5 +31,25 @@ public class AddExp{
             }
         }
         return sb.toString();
+    }
+
+    public boolean checkError(SymbolTable symbolTable) {
+        boolean flag = false;
+        for (MulExp mulExp : mulExps) {
+            flag = flag || mulExp.checkError(symbolTable);
+        }
+        return flag;
+    }
+
+    public int evaluate(SymbolTable symbolTable) {
+        int ans = 0;
+        for (MulExp mulExp : mulExps) {
+            ans += mulExp.evaluate(symbolTable);
+        }
+        return ans;
+    }
+
+    public String getType() {
+        return mulExps.getFirst().getType();
     }
 }

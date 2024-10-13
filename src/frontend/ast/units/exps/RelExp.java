@@ -1,6 +1,7 @@
 package frontend.ast.units.exps;
 
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -30,5 +31,11 @@ public class RelExp {
             }
         }
         return sb.toString();
+    }
+
+    public void checkError(SymbolTable symbolTable) {
+        for (AddExp addExp : addExps) {
+            addExp.checkError(symbolTable);
+        }
     }
 }

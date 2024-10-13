@@ -1,6 +1,7 @@
 package frontend.ast.units.stmts;
 
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 public class PrimaryExp {
     private Token lparent;
@@ -49,5 +50,35 @@ public class PrimaryExp {
         } else {
             return charConst + "\n<Character>\n<PrimaryExp>";
         }
+    }
+
+    public boolean checkError(SymbolTable symbolTable) {
+        if (lVal != null) {
+            return lVal.checkError(symbolTable);
+        } else if (exp != null) {
+            return exp.checkError(symbolTable);
+        }
+        return false;
+    }
+
+    public int evaluate(SymbolTable symbolTable) {
+        if (intConst != null) {
+            return Integer.parseInt(intConst.token.getValue());
+        } else if (charConst != null) {
+            return charConst.token.getValue().charAt(0);
+        } else if (lVal != null) {
+            return lVal.evaluate(symbolTable);
+        } else {
+            return exp.evaluate(symbolTable);
+        }
+    }
+
+    public String getType() {
+        if (lVal != null) {
+            return lVal.getType();
+        } else if (exp != null) {
+            return exp.getType();
+        }
+        return "Int";
     }
 }

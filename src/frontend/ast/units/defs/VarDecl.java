@@ -2,6 +2,7 @@ package frontend.ast.units.defs;
 
 import frontend.ast.units.stmts.BlockItem;
 import frontend.lexer.Token;
+import frontend.symbols.SymbolTable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -29,6 +30,14 @@ public class VarDecl implements Decl, BlockItem {
         this.semicn = semicn;
     }
 
+    public Token getBType() {
+        return BType;
+    }
+
+    public LinkedList<VarDef> getVarDefs() {
+        return varDefs;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -43,5 +52,11 @@ public class VarDecl implements Decl, BlockItem {
         }
         sb.append(semicn + "\n");
         return sb.toString() + "<VarDecl>";
+    }
+
+    public void checkError(SymbolTable symbolTable) {
+        for (VarDef varDef : varDefs) {
+            varDef.checkError(symbolTable, BType);
+        }
     }
 }

@@ -1,6 +1,11 @@
 package frontend.ast.units.stmts;
 
+import frontend.ast.units.exps.LOrExp;
 import frontend.lexer.Token;
+import frontend.lexer.TokenType;
+import frontend.symbols.GetSymTable;
+import frontend.symbols.Symbol;
+import frontend.symbols.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -73,6 +78,26 @@ public class Stmt implements BlockItem {
         this.stringConst = stringConst;
     }
 
+    public boolean lastIsReturn() {
+        if (keyword != null && keyword.is(TokenType.RETURNTK)) {
+            return true;
+        } else if (block != null) {
+            BlockItem blockItem;
+            if (block.getBlockItems().isEmpty()) {
+                blockItem = null;
+            } else {
+                blockItem = block.getBlockItems().getLast();
+            }
+            if (blockItem instanceof Stmt stmt) {
+                return stmt.lastIsReturn();
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     @Override
     public String toString() {
         String string = "<Stmt>";
@@ -141,5 +166,62 @@ public class Stmt implements BlockItem {
             }
         }
         return ret + string;
+    }
+
+    public void checkError(SymbolTable symbolTable) {
+        //error h
+        if (lVal != null) {
+            if (!lVal.checkError(symbolTable)) {
+                Symbol symbol = symbolTable.getSymbol(lVal.getIdent().getValue());
+                if (symbol.is("Const")) {
+                    GetSymTable.addError(lVal.getIdent().getLine(), "h");
+                }
+            }
+        }
+
+        //error l
+        if (keyword != null && keyword.is(TokenType.PRINTFTK)) {
+            String[] strings = stringConst.getValue().split("%");
+            if (strings.length - 1 != exps.size()) {
+                GetSymTable.addError(keyword.getLine(), "l");
+            }
+        }
+
+        //error f
+        if (keyword != null && keyword.is(TokenType.RETURNTK)) {
+            if (symbolTable.getFuncSym().is("Void") && !exps.isEmpty()) {
+                GetSymTable.addError(keyword.getLine(), "f");
+            }
+        }
+
+        if (block != null) {
+            block.checkError(symbolTable);
+        }
+
+        if (!exps.isEmpty()) {
+            for (Exp exp : exps) {
+                exp.checkError(symbolTable);
+            }
+        }
+
+        if (stmt1 != null) {
+            stmt1.checkError(symbolTable);
+        }
+
+        if (stmt2 != null) {
+            stmt2.checkError(symbolTable);
+        }
+
+        if (forStmt1 != null) {
+            forStmt1.checkError(symbolTable);
+        }
+
+        if (forStmt2 != null) {
+            forStmt2.checkError(symbolTable);
+        }
+
+        if (cond != null) {
+            ((LOrExp) cond).checkError(symbolTable);
+        }
     }
 }
