@@ -181,8 +181,18 @@ public class Stmt implements BlockItem {
 
         //error l
         if (keyword != null && keyword.is(TokenType.PRINTFTK)) {
-            String[] strings = stringConst.getValue().split("%");
-            if (strings.length - 1 != exps.size()) {
+            String string = stringConst.getValue();
+            int index = 0;
+            int count = 0;
+            while ((index = string.indexOf("%d", index)) != -1) {
+                count++;
+                index += 2;
+            }
+            while ((index = string.indexOf("%c", index)) != -1) {
+                count++;
+                index += 2;
+            }
+            if (count != exps.size()) {
                 GetSymTable.addError(keyword.getLine(), "l");
             }
         }
