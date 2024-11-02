@@ -3,6 +3,8 @@ package frontend.ast.units.exps;
 import frontend.ast.units.stmts.Cond;
 import frontend.lexer.Token;
 import frontend.symbols.SymbolTable;
+import ir.value.BasicBlock;
+import ir.value.Function;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -38,5 +40,9 @@ public class LOrExp extends Cond {
         for (LAndExp lAndExp : lAndExps) {
             lAndExp.checkError(symbolTable);
         }
+    }
+
+    public void genIR(Function function, BasicBlock block1, BasicBlock block2) {
+        //TODO
     }
 }

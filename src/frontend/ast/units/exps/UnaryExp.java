@@ -4,11 +4,19 @@ import frontend.ast.units.defs.FuncRParams;
 import frontend.ast.units.stmts.Exp;
 import frontend.ast.units.stmts.PrimaryExp;
 import frontend.lexer.Token;
+import frontend.lexer.TokenType;
 import frontend.symbols.FuncSym;
 import frontend.symbols.GetSymTable;
 import frontend.symbols.Symbol;
 import frontend.symbols.SymbolTable;
+import ir.IRBuilder;
+import ir.instr.BinaInstr;
+import ir.instr.CallInstr;
+import ir.instr.IcmpInstr;
+import ir.type.VoidType;
+import ir.value.*;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -128,5 +136,56 @@ public class UnaryExp {
         } else {
             return primaryExp.getType();
         }
+    }
+
+    public Value genIR(Function function) {
+        if (ident != null) {
+            ArrayList<Argument> arguments = new ArrayList<>();
+            if (funcRParams != null) {
+                arguments = funcRParams.genIR(function);
+            }
+            Function f = IRBuilder.irModule.getFunction(ident.getValue());
+            Variable res = null;
+            if (!(f.getType() instanceof VoidType)) {
+                res = new Variable(IRBuilder.getVarName(), f.getType());
+            }
+            IRBuilder.currentBlock.addInstruction(new CallInstr(res, f, arguments));
+            return res;
+        }
+
+        int op = 1;
+        boolean flag = true;
+        for (UnaryOp unaryOp : unaryOps) {
+            if (unaryOp.getOp().is(TokenType.MINU)) {
+                op *= -1;
+            } else if (unaryOp.getOp().is(TokenType.NOT)) {
+                flag = !flag;
+            }
+        }
+
+        Value val = primaryExp.genIR(function);
+        if (val instanceof Literal literal) {
+            if (!flag) {
+                int v = literal.getValue() == 0 ? 1 : 0;
+                return new Literal(v, literal.getType());
+            }
+            if (op == -1) {
+                return new Literal(-literal.getValue(), literal.getType());
+            }
+        }
+        if (!flag) {
+            //仍然返回i32
+            //TODO:1+(!0)怎么办？
+            //将连续的+-！号合并
+            Variable v = new Variable(IRBuilder.getVarName(), val.getType());
+            IRBuilder.currentBlock.addInstruction(new IcmpInstr(v, val, new Literal(0, val.getType()), "ne"));
+            return v;
+        }
+        if (op == -1) {
+            Variable v = new Variable(IRBuilder.getVarName(), val.getType());
+            IRBuilder.currentBlock.addInstruction(new BinaInstr("sub", v, new Literal(0, val.getType()), val));
+            return v;
+        }
+        return val;
     }
 }

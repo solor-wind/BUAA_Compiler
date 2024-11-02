@@ -9,6 +9,10 @@ public class CharConst {
         this.token = token;
     }
 
+    public Token getToken() {
+        return token;
+    }
+
     @Override
     public String toString() {
         return token.toString();

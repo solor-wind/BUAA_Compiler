@@ -2,6 +2,13 @@ package frontend.ast.units.stmts;
 
 import frontend.lexer.Token;
 import frontend.symbols.*;
+import ir.IRBuilder;
+import ir.instr.GetPtrInstr;
+import ir.type.ArrayType;
+import ir.type.PointerType;
+import ir.value.Function;
+import ir.value.Value;
+import ir.value.Variable;
 
 public class LVal {
     private Token ident;
@@ -41,6 +48,7 @@ public class LVal {
     }
 
     public boolean checkError(SymbolTable symbolTable) {
+        this.symbolTable = symbolTable;
         boolean flag = false;
         //error c
         Symbol symbol = symbolTable.getSymbol(ident.getValue());
@@ -93,5 +101,22 @@ public class LVal {
 
     public String getType() {
         return type;
+    }
+
+    private SymbolTable symbolTable;
+
+    public Variable genIR(Function function) {
+        Variable var = (Variable) function.getVariable(symbolTable.getKeyToIR(ident.getValue()));
+        if (lbrack == null) {
+            if (var.isGlobal()) {
+                var = new Variable(var.getName(), new PointerType(var.getType()));
+            }
+            return var;
+        }
+        Value offset = exp.genIR(function);
+        //TODO:value为0时，优化？
+        Variable res = new Variable(IRBuilder.getVarName(), new PointerType(((ArrayType) var.getType()).getElementType()));
+        IRBuilder.currentBlock.addInstruction(new GetPtrInstr(res, var, offset));
+        return res;
     }
 }

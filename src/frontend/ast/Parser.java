@@ -239,6 +239,7 @@ public class Parser {
                     stmt.addIdent(tokens.next());
                     stmt.setStmt2(parseStmt());
                 }
+                stmt.setKind(4);
                 break;
             case FORTK:
                 stmt.setKeyword(tokens.next());
@@ -258,6 +259,7 @@ public class Parser {
                 forFloor++;
                 stmt.setStmt1(parseStmt());
                 forFloor--;
+                stmt.setKind(5);
                 break;
             case BREAKTK:
             case CONTINUETK:
@@ -272,6 +274,7 @@ public class Parser {
                 } else {
                     stmt.addIdent(tokens.next());
                 }
+                stmt.setKind(6);
                 break;
             case RETURNTK:
                 stmt.setKeyword(tokens.next());
@@ -289,6 +292,7 @@ public class Parser {
                 } else {
                     stmt.addIdent(tokens.next());
                 }
+                stmt.setKind(7);
                 break;
             case PRINTFTK:
                 stmt.setKeyword(tokens.next());
@@ -310,9 +314,11 @@ public class Parser {
                 } else {
                     stmt.addIdent(tokens.next());
                 }
+                stmt.setKind(10);
                 break;
             case LBRACE:
                 stmt.setBlock(parseBlock());
+                stmt.setKind(3);
                 break;
             default:
                 iskey = false;
@@ -326,6 +332,11 @@ public class Parser {
             stmt.setLVal(lVal);
             stmt.addIdent(tokens.next());//=
             if (tokens.peek().is(TokenType.GETINTTK) || tokens.peek().is(TokenType.GETCHARTK)) {
+                if (tokens.peek().is(TokenType.GETINTTK)) {
+                    stmt.setKind(8);
+                } else {
+                    stmt.setKind(9);
+                }
                 stmt.setKeyword(tokens.next());
                 stmt.addIdent(tokens.next());//(
                 //error j
@@ -349,10 +360,12 @@ public class Parser {
                 } else {
                     stmt.addIdent(tokens.next());
                 }
+                stmt.setKind(1);
                 return stmt;
             }
         } else {
             tokens.setPos(pos);
+            stmt.setKind(2);
             if (tokens.peek().is(TokenType.SEMICN)) {
                 stmt.addIdent(tokens.next());
                 return stmt;

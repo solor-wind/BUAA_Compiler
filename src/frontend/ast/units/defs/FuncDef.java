@@ -8,6 +8,11 @@ import frontend.lexer.TokenType;
 import frontend.symbols.FuncSym;
 import frontend.symbols.GetSymTable;
 import frontend.symbols.SymbolTable;
+import ir.IRBuilder;
+import ir.instr.AllocaInstr;
+import ir.instr.StoreInstr;
+import ir.type.*;
+import ir.value.*;
 
 public class FuncDef implements Unit {
     private Token funcType;
@@ -113,5 +118,37 @@ public class FuncDef implements Unit {
                 constDecl.checkError(s);
             }
         }
+    }
+
+    public Function genIR() {
+        Type type;
+        if (funcType.is(TokenType.VOIDTK)) {
+            type = new VoidType();
+        } else if (funcType.is(TokenType.INTTK)) {
+            type = new IntegerType(32);
+        } else {
+            type = new IntegerType(8);
+        }
+        Function function = new Function("@" + funcName.getValue(), type);
+        IRBuilder.irModule.addFunction(funcName.getValue(), function);
+        IRBuilder.currentFunction = function;
+        IRBuilder.currentBlock = new BasicBlock(IRBuilder.getBlockName(), function);
+
+        if (funcFParams != null) {
+            function.setArguments(funcFParams.genIR(function));
+            //给参数分配空间
+            for (Argument argument : function.getArguments()) {
+                //将非指针参数替换，参数对应的映射表
+                if (!(argument.getType() instanceof PointerType)) {
+                    Variable variable = new Variable(IRBuilder.getVarName(), new PointerType(argument.getType()));
+                    function.changeMap(argument, variable);
+                    IRBuilder.currentBlock.addInstruction(new AllocaInstr(variable));//TODO:应该没问题吧？
+                    IRBuilder.currentBlock.addInstruction(new StoreInstr(argument, variable));
+                }
+            }
+        }
+
+        block.genIR(function);
+        return function;
     }
 }

@@ -39,6 +39,13 @@ public class ConstInitVal {
         this.stringConst = stringConst;
     }
 
+    public String getStringConst() {
+        if (stringConst != null) {
+            return stringConst.getValue();
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         if (stringConst != null) {

@@ -2,7 +2,10 @@ package frontend.ast.units.defs;
 
 import frontend.ast.units.stmts.Exp;
 import frontend.lexer.Token;
+import ir.value.Argument;
+import ir.value.Function;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -34,5 +37,13 @@ public class FuncRParams {
             }
         }
         return sb + "<FuncRParams>";
+    }
+
+    public ArrayList<Argument> genIR(Function function) {
+        ArrayList<Argument> args = new ArrayList<>();
+        for (Exp exp : exps) {
+            args.add(new Argument(exp.genIR(function)));
+        }
+        return args;
     }
 }

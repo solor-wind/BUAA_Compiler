@@ -3,7 +3,11 @@ package frontend.ast.units.defs;
 import frontend.ast.units.stmts.BlockItem;
 import frontend.lexer.Token;
 import frontend.symbols.SymbolTable;
+import ir.type.Type;
+import ir.value.Function;
+import ir.value.Variable;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -52,6 +56,20 @@ public class ConstDecl implements Decl, BlockItem {
     public void checkError(SymbolTable symbolTable) {
         for (ConstDef constDef : constDefs) {
             constDef.checkError(symbolTable, BType);
+        }
+    }
+
+    public ArrayList<Variable> genGlobalIR() {
+        ArrayList<Variable> vars = new ArrayList<>();
+        for (ConstDef constDef : constDefs) {
+            vars.add(constDef.genGlobalIR(BType));
+        }
+        return vars;
+    }
+
+    public void genIR(Function function) {
+        for (ConstDef constDef : constDefs) {
+            constDef.genIR(function,BType);
         }
     }
 }

@@ -23,6 +23,9 @@ public class GetSymTable {
     public void parse() {
         root.setOutID(++outID);
         compUnit.checkError(root);
+        for (Symbol symbol : root.getSymbols()) {
+            symbol.setGlobal(true);
+        }
     }
 
     public static void addError(int line, String e) {

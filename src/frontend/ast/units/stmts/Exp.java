@@ -2,6 +2,8 @@ package frontend.ast.units.stmts;
 
 import frontend.ast.units.exps.AddExp;
 import frontend.symbols.SymbolTable;
+import ir.value.Function;
+import ir.value.Value;
 
 public class Exp {
     private AddExp addExp;
@@ -25,5 +27,9 @@ public class Exp {
 
     public String getType() {
         return addExp.getType();
+    }
+
+    public Value genIR(Function function) {
+        return addExp.genIR(function);
     }
 }

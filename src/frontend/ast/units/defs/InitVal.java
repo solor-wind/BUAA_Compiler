@@ -3,7 +3,11 @@ package frontend.ast.units.defs;
 import frontend.ast.units.stmts.Exp;
 import frontend.lexer.Token;
 import frontend.symbols.SymbolTable;
+import ir.value.Function;
+import ir.value.Value;
+import ir.value.Variable;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -38,6 +42,13 @@ public class InitVal {
         this.stringConst = stringConst;
     }
 
+    public String getStringConst() {
+        if (stringConst != null) {
+            return stringConst.getValue();
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         if (stringConst != null) {
@@ -70,5 +81,13 @@ public class InitVal {
             }
         }
         return flag;
+    }
+
+    public ArrayList<Value> genIR(Function function) {
+        ArrayList<Value> values = new ArrayList<>();
+        for(Exp exp : exps) {
+            values.add(exp.genIR(function));
+        }
+        return values;
     }
 }

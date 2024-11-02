@@ -6,6 +6,12 @@ import frontend.lexer.TokenType;
 import frontend.symbols.GetSymTable;
 import frontend.symbols.Symbol;
 import frontend.symbols.SymbolTable;
+import ir.IRBuilder;
+import ir.instr.*;
+import ir.type.ArrayType;
+import ir.type.IntegerType;
+import ir.type.PointerType;
+import ir.value.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -233,5 +239,173 @@ public class Stmt implements BlockItem {
         if (cond != null) {
             ((LOrExp) cond).checkError(symbolTable);
         }
+    }
+
+    /**
+     * 1: LVal '=' Exp ';'
+     * 2: [Exp] ';'
+     * 3: Block
+     * 4: 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+     * 5: 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
+     * 6: 'break' ';' | 'continue' ';'
+     * 7: 'return' [Exp] ';'
+     * 8: LVal '=' 'getint''('')'';'
+     * 9: LVal '=' 'getchar''('')'';'
+     * 10:'printf''('StringConst {','Exp}')'';'
+     */
+    private int kind = -1;
+
+    public void setKind(int kind) {
+        this.kind = kind;
+    }
+
+    public void genIR(Function function) {
+        switch (kind) {
+            case 1:
+                Variable var = lVal.genIR(function);
+                Value value = exps.get(0).genIR(function);
+//                if (var.isGlobal()) {
+//                    var = new Variable(var.getName(), new PointerType(var.getType()));
+//                }
+                if (((PointerType) (var.getType())).getBaseType().is("i8")) {
+                    if (value instanceof Literal literal) {
+                        value = new Literal(literal.getValue(), new IntegerType(8));
+                    } else {
+                        Variable newValue = new Variable(IRBuilder.getVarName(), new IntegerType(8));
+                        IRBuilder.currentBlock.addInstruction(new TruncInstr(newValue, value));
+                        value = newValue;
+                    }
+                }
+                IRBuilder.currentBlock.addInstruction(new StoreInstr(value, var));
+                break;
+            case 2:
+                if (!exps.isEmpty()) {
+                    exps.get(0).genIR(function);
+                }
+                break;
+            case 3:
+                block.genIR(function);
+                break;
+            case 4:
+                BasicBlock block1 = new BasicBlock(IRBuilder.getVarName(), function);
+                IRBuilder.currentBlock = block1;
+                stmt1.genIR(function);
+                BasicBlock block2 = null;
+                if (stmt2 != null) {
+                    block2 = new BasicBlock(IRBuilder.getVarName(), function);
+                    IRBuilder.currentBlock = block2;
+                    stmt2.genIR(function);
+                }
+                ((LOrExp)cond).genIR(function,block1,block2);
+                break;
+            case 5:
+                break;
+            case 6:
+                break;
+            case 7:
+                if (exps.isEmpty()) {
+                    IRBuilder.currentBlock.addInstruction(new RetInstr(null));
+                } else {
+                    Value v = exps.get(0).genIR(function);
+                    if (!v.getType().equals(function.getType())) {
+                        if (v instanceof Literal) {
+                            IRBuilder.currentBlock.addInstruction(new RetInstr(new Literal(((Literal) v).getValue(), new IntegerType(8))));
+                        } else {
+                            Variable v2 = new Variable(IRBuilder.getVarName(), new IntegerType(8));
+                            IRBuilder.currentBlock.addInstruction(new TruncInstr(v2, v));
+                            IRBuilder.currentBlock.addInstruction(new RetInstr(v2));
+                        }
+                    } else {
+                        IRBuilder.currentBlock.addInstruction(new RetInstr(v));
+                    }
+                }
+                break;
+            case 8:
+                Variable var8 = lVal.genIR(function);
+                Variable res8 = new Variable(IRBuilder.getVarName(), new IntegerType(32));
+                IRBuilder.currentBlock.addInstruction(new CallInstr(res8, IRBuilder.getLibFunction("getint"), new ArrayList<>()));
+                IRBuilder.currentBlock.addInstruction(new StoreInstr(res8, var8));
+                break;
+            case 9:
+                Variable var9 = lVal.genIR(function);
+                Variable res9 = new Variable(IRBuilder.getVarName(), new IntegerType(32));
+                IRBuilder.currentBlock.addInstruction(new CallInstr(res9, IRBuilder.getLibFunction("getchar"), new ArrayList<>()));
+                Variable tmp9 = new Variable(IRBuilder.getVarName(), new IntegerType(8));
+                IRBuilder.currentBlock.addInstruction(new TruncInstr(tmp9, res9));
+                IRBuilder.currentBlock.addInstruction(new StoreInstr(tmp9, var9));
+                break;
+            case 10:
+                //将stringConst拆成好几个putstr+putint/putchar
+                String string = stringConst.getValue();
+                int index = 0, expIndex = 0;
+                for (int i = 0; i < string.length(); i++) {
+                    //TODO强制类型转换？
+                    if (string.charAt(i) == '%' && i + 1 < string.length() && string.charAt(i + 1) == 'd') {
+                        if (index != i - 1) {
+                            addPutstr(string.substring(index, i));
+                        }
+                        Value value102 = exps.get(expIndex).genIR(function);
+                        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putint"), value102));
+                        expIndex++;
+                        index = i + 2;
+                        i++;
+                    } else if (string.charAt(i) == '%' && i + 1 < string.length() && string.charAt(i + 1) == 'c') {
+                        if (index != i - 1) {
+                            addPutstr(string.substring(index, i));
+                        }
+                        Value value102 = exps.get(expIndex).genIR(function);
+                        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), value102));
+                        expIndex++;
+                        index = i + 2;
+                        i++;
+//                        if (index == i - 1) {
+//                            index += 3;
+//                            i += 2;
+//                            Value value102 = exps.get(expIndex).genIR(function);
+//                            IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), value102));
+//                            expIndex++;
+//                            continue;
+//                        }
+//                        addPutstr(string.substring(index, i));
+//                        //调用putch
+//                        Value value102 = exps.get(expIndex).genIR(function);
+//                        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), value102));
+//                        index = i + 2;
+//                        expIndex++;
+                    }
+                }
+                if (index < string.length()) {
+                    addPutstr(string.substring(index));
+                }
+                break;
+
+        }
+    }
+
+    public String toWrite(String string) {
+        String res = string.replace(Character.toString(92), "\\\\");
+        res = res.replace(Character.toString(7), "\\a");
+        res = res.replace(Character.toString(8), "\\b");
+        res = res.replace(Character.toString(9), "\\t");
+        res = res.replace(Character.toString(10), "\\0A");
+        res = res.replace(Character.toString(11), "\\v");
+        res = res.replace(Character.toString(12), "\\f");
+        res = res.replace(Character.toString(34), "\\\"");
+        res = res.replace(Character.toString(39), "\\'");
+        res = res.replace(Character.toString(0), "\\0");
+        return "\"" + res + "\\00\"";
+    }
+
+    public void addPutstr(String s) {
+        //添加全局变量
+        Variable var10 = new Variable(IRBuilder.getGlobalVarName(), new ArrayType(new IntegerType(8), s.length() + 1));
+        var10.setConstant(true);
+        var10.setInitValue(s);
+        var10.setStringConst("c" + toWrite(s));
+        IRBuilder.irModule.addGlobalVariable(var10);
+        //调用str
+        Variable var101 = new Variable(IRBuilder.getVarName(), new PointerType(new IntegerType(8)));
+        IRBuilder.currentBlock.addInstruction(new GetPtrInstr(var101, var10, new Literal(0, new IntegerType(32))));
+        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putstr"), var101));
     }
 }

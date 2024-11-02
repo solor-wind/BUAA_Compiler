@@ -1,7 +1,15 @@
 package frontend.ast.units.exps;
 
 import frontend.lexer.Token;
+import frontend.lexer.TokenType;
 import frontend.symbols.SymbolTable;
+import ir.IRBuilder;
+import ir.instr.BinaInstr;
+import ir.type.IntegerType;
+import ir.value.Function;
+import ir.value.Literal;
+import ir.value.Value;
+import ir.value.Variable;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -51,5 +59,38 @@ public class MulExp {
 
     public String getType() {
         return unaryExps.getFirst().getType();
+    }
+
+    public Value genIR(Function function) {
+        Iterator<UnaryExp> it1 = unaryExps.iterator();
+        Iterator<Token> it2 = ops.iterator();
+        Value value = null;
+        if (it1.hasNext()) {
+            value = it1.next().genIR(function);
+        }
+        while (it2.hasNext() && it1.hasNext()) {
+            Value v2 = it1.next().genIR(function);
+            Token op = it2.next();
+            if (value instanceof Literal l1 && v2 instanceof Literal l2) {
+                if (op.is(TokenType.MULT)) {
+                    value = new Literal(l1.getValue() * l2.getValue(), new IntegerType(32));
+                } else if (op.is(TokenType.DIV)) {
+                    value = new Literal(l1.getValue() / l2.getValue(), new IntegerType(32));
+                } else {
+                    value = new Literal(l1.getValue() % l2.getValue(), new IntegerType(32));
+                }
+            } else {
+                Variable var = new Variable(IRBuilder.getVarName(), new IntegerType(32));
+                if (op.is(TokenType.MULT)) {
+                    IRBuilder.currentBlock.addInstruction(new BinaInstr("mul", var, value, v2));
+                } else if (op.is(TokenType.DIV)) {
+                    IRBuilder.currentBlock.addInstruction(new BinaInstr("div", var, value, v2));
+                } else {
+                    IRBuilder.currentBlock.addInstruction(new BinaInstr("srem", var, value, v2));
+                }
+                value = var;
+            }
+        }
+        return value;
     }
 }

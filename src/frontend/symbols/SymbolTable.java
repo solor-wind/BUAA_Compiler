@@ -54,6 +54,15 @@ public class SymbolTable {
         return null;
     }
 
+    public String getKeyToIR(String name) {
+        if (hashSymbols.containsKey(name)) {
+            return outID + name;
+        } else if (parent != null) {
+            return parent.getKeyToIR(name);
+        }
+        return null;
+    }
+
 
     public LinkedList<Symbol> getSymbols() {
         return symbols;

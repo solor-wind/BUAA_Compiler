@@ -1,7 +1,10 @@
 package frontend.ast.units.defs;
 
 import frontend.lexer.Token;
+import ir.value.Argument;
+import ir.value.Function;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -33,5 +36,16 @@ public class FuncFParams {
             }
         }
         return sb + "<FuncFParams>";
+    }
+
+    public ArrayList<Argument> genIR(Function function) {
+        if (funcFParams.isEmpty()) {
+            return new ArrayList<>();
+        }
+        ArrayList<Argument> args = new ArrayList<>();
+        for (FuncFParam fp : funcFParams) {
+            args.add(fp.genIR(function));
+        }
+        return args;
     }
 }

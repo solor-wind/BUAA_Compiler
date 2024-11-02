@@ -3,6 +3,7 @@ package frontend.symbols;
 public class Symbol {
     private String name;
     private String type;
+    private boolean isGlobal;
 
     public Symbol(String name, String type) {
         this.name = name;
@@ -23,5 +24,13 @@ public class Symbol {
      */
     public boolean is(String type) {
         return this.type.contains(type);
+    }
+
+    public boolean isGlobal() {
+        return isGlobal;
+    }
+
+    public void setGlobal(boolean global) {
+        isGlobal = global;
     }
 }

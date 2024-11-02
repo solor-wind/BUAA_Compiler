@@ -1,6 +1,9 @@
 package frontend.ast.units.defs;
 
 import frontend.symbols.SymbolTable;
+import ir.IRBuilder;
+import ir.value.Function;
+import ir.value.IRModule;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -48,6 +51,24 @@ public class CompUnit implements Unit {
                 constDecl.checkError(symbolTable);
             } else if (object instanceof VarDecl varDecl) {
                 varDecl.checkError(symbolTable);
+            }
+        }
+        this.symbolTable = symbolTable;
+    }
+
+    private SymbolTable symbolTable;
+
+    public void genIR() {
+        for (Object object : decfs) {
+            if (object instanceof FuncDef funcDef) {
+                Function function = funcDef.genIR();
+                function.addBlock(IRBuilder.currentBlock);
+                IRBuilder.irModule.addFunction(function);
+                IRBuilder.varName = 0;
+            } else if (object instanceof ConstDecl constDecl) {
+                IRBuilder.irModule.addGlobalVariables(constDecl.genGlobalIR());
+            } else if (object instanceof VarDecl varDecl) {
+                IRBuilder.irModule.addGlobalVariables(varDecl.genGlobalIR());
             }
         }
     }
