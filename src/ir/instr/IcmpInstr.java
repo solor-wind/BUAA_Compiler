@@ -9,6 +9,9 @@ public class IcmpInstr extends Instruction {
     private Value res;
     private String op;
 
+    /**
+     * op:eq,ne,sgt,sge,slt,sle
+     */
     public IcmpInstr(Value res, Value lv, Value rv, String op) {
         super("icmp");
         this.lv = lv;

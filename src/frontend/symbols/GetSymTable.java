@@ -2,6 +2,7 @@ package frontend.symbols;
 
 import frontend.ast.units.defs.*;
 
+import java.util.HashMap;
 import java.util.TreeMap;
 
 public class GetSymTable {
@@ -9,6 +10,7 @@ public class GetSymTable {
     public static SymbolTable root = new SymbolTable(null, null);
     public static int outID = 0;
     private static TreeMap<Integer, String> errors = new TreeMap<>();
+    public static HashMap<String, Symbol> symMap = new HashMap<>();//全局唯一符号表
 
     public GetSymTable(CompUnit compUnit, TreeMap<Integer, String> errors) {
         this.compUnit = compUnit;

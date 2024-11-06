@@ -13,6 +13,7 @@ import ir.IRBuilder;
 import ir.instr.BinaInstr;
 import ir.instr.CallInstr;
 import ir.instr.IcmpInstr;
+import ir.type.IntegerType;
 import ir.type.VoidType;
 import ir.value.*;
 
@@ -80,6 +81,7 @@ public class UnaryExp {
     }
 
     public boolean checkError(SymbolTable symbolTable) {
+        this.symbolTable = symbolTable;
         boolean flag = false;
         if (ident != null) {
             //error c
@@ -127,7 +129,13 @@ public class UnaryExp {
      * 仅仅适用于常量表达式
      */
     public int evaluate(SymbolTable symbolTable) {
-        return primaryExp.evaluate(symbolTable);
+        int op = 1;
+        for (UnaryOp unaryOp : unaryOps) {
+            if (unaryOp.getOp().is(TokenType.MINU)) {
+                op *= -1;
+            }
+        }
+        return op * primaryExp.evaluate(symbolTable);
     }
 
     public String getType() {
@@ -138,21 +146,9 @@ public class UnaryExp {
         }
     }
 
-    public Value genIR(Function function) {
-        if (ident != null) {
-            ArrayList<Argument> arguments = new ArrayList<>();
-            if (funcRParams != null) {
-                arguments = funcRParams.genIR(function);
-            }
-            Function f = IRBuilder.irModule.getFunction(ident.getValue());
-            Variable res = null;
-            if (!(f.getType() instanceof VoidType)) {
-                res = new Variable(IRBuilder.getVarName(), f.getType());
-            }
-            IRBuilder.currentBlock.addInstruction(new CallInstr(res, f, arguments));
-            return res;
-        }
+    private SymbolTable symbolTable;
 
+    public Value genIR(Function function, BasicBlock basicBlock) {
         int op = 1;
         boolean flag = true;
         for (UnaryOp unaryOp : unaryOps) {
@@ -163,7 +159,40 @@ public class UnaryExp {
             }
         }
 
-        Value val = primaryExp.genIR(function);
+        if (ident != null) {
+            ArrayList<Argument> arguments = new ArrayList<>();
+            if (funcRParams != null) {
+                ArrayList<Value> values = funcRParams.genIR(function, basicBlock);
+                Function func = IRBuilder.irModule.getFunction(ident.getValue());
+                ArrayList<Argument> args = func.getArguments();
+                for (int i = 0; i < values.size(); i++) {
+                    arguments.add(new Argument(IRBuilder.changeType(basicBlock, values.get(i), args.get(i).getType())));
+                }
+            }
+            Function f = IRBuilder.irModule.getFunction(ident.getValue());
+            Variable res = null;
+            if (!(f.getType() instanceof VoidType)) {
+                res = new Variable(IRBuilder.getVarName(), f.getType());
+            }
+            basicBlock.addInstruction(new CallInstr(res, f, arguments));
+            if (!flag) {
+                //仍然返回i32
+                //TODO:1+(!0)怎么办？
+                //将连续的+-！号合并
+                Variable v = new Variable(IRBuilder.getVarName(), new IntegerType(1));
+                basicBlock.addInstruction(new IcmpInstr(v, res, new Literal(0, res.getType()), "eq"));
+                return IRBuilder.changeType(basicBlock, v, new IntegerType(32));
+            }
+            if (op == -1) {
+                Variable v = new Variable(IRBuilder.getVarName(), res.getType());
+                basicBlock.addInstruction(new BinaInstr("sub", v, new Literal(0, res.getType()), res));
+                return v;
+            }
+            return res;
+        }
+
+
+        Value val = primaryExp.genIR(function, basicBlock);
         if (val instanceof Literal literal) {
             if (!flag) {
                 int v = literal.getValue() == 0 ? 1 : 0;
@@ -177,13 +206,13 @@ public class UnaryExp {
             //仍然返回i32
             //TODO:1+(!0)怎么办？
             //将连续的+-！号合并
-            Variable v = new Variable(IRBuilder.getVarName(), val.getType());
-            IRBuilder.currentBlock.addInstruction(new IcmpInstr(v, val, new Literal(0, val.getType()), "ne"));
-            return v;
+            Variable v = new Variable(IRBuilder.getVarName(), new IntegerType(1));
+            basicBlock.addInstruction(new IcmpInstr(v, val, new Literal(0, val.getType()), "eq"));
+            return IRBuilder.changeType(basicBlock, v, new IntegerType(32));
         }
         if (op == -1) {
             Variable v = new Variable(IRBuilder.getVarName(), val.getType());
-            IRBuilder.currentBlock.addInstruction(new BinaInstr("sub", v, new Literal(0, val.getType()), val));
+            basicBlock.addInstruction(new BinaInstr("sub", v, new Literal(0, val.getType()), val));
             return v;
         }
         return val;

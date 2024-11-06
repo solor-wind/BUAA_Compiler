@@ -8,6 +8,9 @@ public class BinaInstr extends Instruction {
     private Value val2;
     private Value res;
 
+    /**
+     * add,sub,mul,sdiv,srem
+     */
     public BinaInstr(String typeName, Value res, Value val1, Value val2) {
         super(typeName);
         this.val1 = val1;

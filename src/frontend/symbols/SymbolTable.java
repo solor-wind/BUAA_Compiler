@@ -43,6 +43,7 @@ public class SymbolTable {
     public void addSymbol(Symbol symbol) {
         symbols.add(symbol);
         hashSymbols.put(symbol.getName(), symbol);
+        GetSymTable.symMap.put(getKeyToIR(symbol.getName()), symbol);
     }
 
     public Symbol getSymbol(String name) {

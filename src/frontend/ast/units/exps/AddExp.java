@@ -48,9 +48,20 @@ public class AddExp {
     }
 
     public int evaluate(SymbolTable symbolTable) {
+        Iterator<MulExp> it1 = mulExps.iterator();
+        Iterator<Token> it2 = ops.iterator();
         int ans = 0;
-        for (MulExp mulExp : mulExps) {
-            ans += mulExp.evaluate(symbolTable);
+        if (it1.hasNext()) {
+            ans += it1.next().evaluate(symbolTable);
+        }
+        while (it1.hasNext() && it2.hasNext()) {
+            MulExp mulExp = it1.next();
+            Token op = it2.next();
+            if (op.is(TokenType.MINU)) {
+                ans -= mulExp.evaluate(symbolTable);
+            } else {
+                ans += mulExp.evaluate(symbolTable);
+            }
         }
         return ans;
     }
@@ -59,15 +70,16 @@ public class AddExp {
         return mulExps.getFirst().getType();
     }
 
-    public Value genIR(Function function) {
+    public Value genIR(Function function, BasicBlock basicBlock) {
         Iterator<MulExp> it1 = mulExps.iterator();
         Iterator<Token> it2 = ops.iterator();
         Value value = null;
         if (it1.hasNext()) {
-            value = it1.next().genIR(function);
+            value = it1.next().genIR(function, basicBlock);
         }
+        //TODO:更好的算法是先把字面量算出来
         while (it2.hasNext() && it1.hasNext()) {
-            Value v2 = it1.next().genIR(function);
+            Value v2 = it1.next().genIR(function, basicBlock);
             if (value instanceof Literal l1 && v2 instanceof Literal l2) {
                 if (it2.next().is(TokenType.PLUS)) {
                     value = new Literal(l1.getValue() + l2.getValue(), new IntegerType(32));
@@ -77,33 +89,13 @@ public class AddExp {
             } else {
                 Variable var = new Variable(IRBuilder.getVarName(), new IntegerType(32));
                 if (it2.next().is(TokenType.PLUS)) {
-                    IRBuilder.currentBlock.addInstruction(new BinaInstr("add", var, value, v2));
+                    basicBlock.addInstruction(new BinaInstr("add", var, value, v2));
                 } else {
-                    IRBuilder.currentBlock.addInstruction(new BinaInstr("sub", var, value, v2));
+                    basicBlock.addInstruction(new BinaInstr("sub", var, value, v2));
                 }
                 value = var;
             }
         }
         return value;
-
-//        LinkedList<Value> values = new LinkedList<>();
-//        for (MulExp mulExp : mulExps) {
-//            Value value = mulExp.genIR(function);
-//            values.add(value);
-//        }
-//
-//        while (values.size() > 1) {
-//            Value v1=values.removeFirst();
-//            Value v2=values.removeFirst();
-//            //TODO:还有更好的算法，先把字面量算出来
-//            if(v1 instanceof Literal l1 && v2 instanceof Literal l2) {
-//                values.add(new Literal(l1.getValue()+l2.getValue(),new IntegerType(32)));
-//            }else{
-//                Variable var=new Variable(IRBuilder.getVarName(),new IntegerType(32));
-//                IRBuilder.currentBlock.addInstruction(new BinaInstr("add",var,v1,v2));
-//                values.add(var);
-//            }
-//        }
-//        return values.getFirst();
     }
 }

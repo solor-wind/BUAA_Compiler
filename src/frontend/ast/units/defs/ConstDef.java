@@ -68,7 +68,6 @@ public class ConstDef {
 
     public void checkError(SymbolTable symbolTable, Token BType) {
         boolean isError = false;
-        this.symbolTable = symbolTable;
         //error b
         if (symbolTable.hasDefined(ident.getValue())) {
             GetSymTable.addError(ident.getLine(), "b");
@@ -87,9 +86,9 @@ public class ConstDef {
                     arraySym.setInitVals(constInitVal.evaluateArray(symbolTable));
                 } else {
                     char[] s = constInitVal.getStringConst().toCharArray();
-                    LinkedList<Object> list = new LinkedList<>();
+                    LinkedList<Integer> list = new LinkedList<>();
                     for (char c : s) {
-                        list.add(c);
+                        list.add((int) c);
                     }
                     arraySym.setInitVals(list);
                 }
@@ -107,9 +106,10 @@ public class ConstDef {
                 symbolTable.addSymbol(varSym);
             }
         }
+        symKey = symbolTable.getKeyToIR(ident.getValue());
     }
 
-    SymbolTable symbolTable;
+    private String symKey;
 
     public Variable genGlobalIR(Token BType) {
         //const一定有初值
@@ -121,28 +121,21 @@ public class ConstDef {
             //char s='1';
             variable = new Variable("@" + ident.getValue(), type, true, true);
             IRBuilder.irModule.addGlobalVariable(ident.getValue(), variable);
-            VarSym varSym = (VarSym) symbolTable.getSymbol(ident.getValue());
+            VarSym varSym = (VarSym) GetSymTable.symMap.get(symKey);
             variable.setInitValue(varSym.getInitVal());
-            return new Variable(ident.getValue(), type);
+            return variable;
         }
-        ArraySym arraySym = (ArraySym) symbolTable.getSymbol(ident.getValue());
+        ArraySym arraySym = (ArraySym) GetSymTable.symMap.get(symKey);
         type = new ArrayType(type, arraySym.getLength());
         variable = new Variable("@" + ident.getValue(), type, true, true);
+        variable.setArray(true);
         IRBuilder.irModule.addGlobalVariable(ident.getValue(), variable);
-        ArrayList<Integer> initVals = new ArrayList<>(arraySym.getInitVals().size());
-        //TODO:字符串初始化、只初始化一部分?
-        for (Object o : arraySym.getInitVals()) {
-            if (o instanceof Exp exp) {
-                initVals.add(exp.evaluate(symbolTable));
-            } else {
-                initVals.add((int) o);
-            }
-        }
+        ArrayList<Integer> initVals = new ArrayList<>(arraySym.getInitVals());
         variable.setInitValue(initVals);
         return variable;
     }
 
-    public void genIR(Function function, Token BType) {
+    public void genIR(Function function, BasicBlock basicBlock, Token BType) {
         Type type = BType.is(TokenType.INTTK) ? new IntegerType(32) : new IntegerType(8);
         Variable variable;
         //const一定有初值
@@ -152,32 +145,27 @@ public class ConstDef {
             //char s='1';
             variable = new Variable(IRBuilder.getVarName(), new PointerType(type));
             variable.setConstant(true);
-            VarSym varSym = (VarSym) symbolTable.getSymbol(ident.getValue());
+            VarSym varSym = (VarSym) GetSymTable.symMap.get(symKey);
             variable.setInitValue(varSym.getInitVal());
-            function.addVariable(symbolTable.getKeyToIR(ident.getValue()), variable);
-            IRBuilder.currentBlock.addInstruction(new AllocaInstr(variable));
-            IRBuilder.currentBlock.addInstruction(new StoreInstr(new Literal((int) (variable.getInitValue()), type), variable));
+            function.addVariable(symKey, variable);
+            basicBlock.addInstruction(new AllocaInstr(variable));
+            basicBlock.addInstruction(new StoreInstr(new Literal((int) (variable.getInitValue()), type), variable));
+            return;
         }
 
         //TODO:将未初始化的部分赋值为0
-        ArraySym arraySym = (ArraySym) symbolTable.getSymbol(ident.getValue());
+        ArraySym arraySym = (ArraySym) GetSymTable.symMap.get(symKey);
         variable = new Variable(IRBuilder.getVarName(), new PointerType(type));
         variable.setConstant(true);
-        function.addVariable(symbolTable.getKeyToIR(ident.getValue()), variable);
-        ArrayList<Integer> initVals = new ArrayList<>(arraySym.getInitVals().size());
-        for (Object o : arraySym.getInitVals()) {
-            if (o instanceof Exp exp) {
-                initVals.add(exp.evaluate(symbolTable));
-            } else {
-                initVals.add((int) o);
-            }
-        }
+        variable.setArray(true);
+        function.addVariable(symKey, variable);
+        ArrayList<Integer> initVals = new ArrayList<>(arraySym.getInitVals());
         variable.setInitValue(initVals);
-        IRBuilder.currentBlock.addInstruction(new AllocaInstr(variable, arraySym.getLength()));
+        basicBlock.addInstruction(new AllocaInstr(variable, arraySym.getLength()));
         for (int i = 0; i < initVals.size(); i++) {
             Variable res = new Variable(IRBuilder.getVarName(), new PointerType(type));
-            IRBuilder.currentBlock.addInstruction(new GetPtrInstr(res, variable, new Literal(i, new IntegerType(32))));
-            IRBuilder.currentBlock.addInstruction(new StoreInstr(new Literal(initVals.get(i), type), res));
+            basicBlock.addInstruction(new GetPtrInstr(res, variable, new Literal(i, new IntegerType(32))));
+            basicBlock.addInstruction(new StoreInstr(new Literal(initVals.get(i), type), res));
         }
     }
 }

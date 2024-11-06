@@ -1,14 +1,16 @@
 package ir;
 
+import ir.instr.TruncInstr;
+import ir.instr.ZextInstr;
 import ir.type.IntegerType;
 import ir.type.PointerType;
+import ir.type.Type;
 import ir.type.VoidType;
-import ir.value.Argument;
-import ir.value.BasicBlock;
-import ir.value.Function;
-import ir.value.IRModule;
+import ir.value.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Stack;
 
 public class IRBuilder {
     public static int globalVarName = 0;
@@ -17,6 +19,7 @@ public class IRBuilder {
     public static IRModule irModule;
     public static Function currentFunction;
     public static BasicBlock currentBlock;
+    public static Stack<ArrayList<BasicBlock>> forBlock = new Stack<>();
 
     public static HashMap<String, Function> libFunctions = new HashMap<>();
 
@@ -50,7 +53,7 @@ public class IRBuilder {
     }
 
     public static String getVarName() {
-        return "%" + varName++;
+        return "%v" + varName++;
     }
 
     public static String getBlockName() {
@@ -82,6 +85,29 @@ public class IRBuilder {
         currentFunction.addBlock(currentBlock);
         currentFunction = function;
         currentBlock = new BasicBlock(getBlockName(), currentFunction);
+    }
+
+    /**
+     * 将Value转化成type类型，要求为IntegerType，返回转化之后的value
+     */
+    public static Value changeType(BasicBlock block, Value value, Type type) {
+        if (!(value.getType() instanceof IntegerType) || !(type instanceof IntegerType)) {
+            return value;
+        }
+        IntegerType fromType = (IntegerType) value.getType();
+        IntegerType toType = (IntegerType) type;
+        if (fromType.equals(toType)) {
+            return value;
+        } else if (value instanceof Literal l) {
+            return new Literal(l.getValue(), toType);
+        }
+        Variable var = new Variable(getVarName(), toType);
+        if (fromType.getBits() < toType.getBits()) {
+            block.addInstruction(new ZextInstr(var, value));
+        } else {
+            block.addInstruction(new TruncInstr(var, value));
+        }
+        return var;
     }
 
 }

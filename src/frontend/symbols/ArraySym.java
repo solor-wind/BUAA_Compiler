@@ -5,7 +5,7 @@ import java.util.LinkedList;
 
 public class ArraySym extends Symbol {
     private int length;
-    private LinkedList<Object> initVals;//可能为Integer,Character,Exp
+    private LinkedList<Integer> initVals = new LinkedList<>();
 
     public ArraySym(String name, String type) {
         super(name, type);
@@ -19,15 +19,15 @@ public class ArraySym extends Symbol {
         return length;
     }
 
-    public void setInitVals(LinkedList<Object> initVals) {
+    public void setInitVals(LinkedList<Integer> initVals) {
         this.initVals = initVals;
     }
 
-    public void addInitVal(Object initVal) {
+    public void addInitVal(Integer initVal) {
         initVals.add(initVal);
     }
 
-    public LinkedList<Object> getInitVals() {
+    public LinkedList<Integer> getInitVals() {
         return initVals;
     }
 }

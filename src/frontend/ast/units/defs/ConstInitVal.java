@@ -78,15 +78,15 @@ public class ConstInitVal {
         return flag;
     }
 
-    public LinkedList<Object> evaluateArray(SymbolTable symbolTable) {
-        LinkedList<Object> list = new LinkedList<>();
+    public LinkedList<Integer> evaluateArray(SymbolTable symbolTable) {
+        LinkedList<Integer> list = new LinkedList<>();
         for (ConstExp constExp : constExps) {
             list.add(constExp.evaluate(symbolTable));
         }
         return list;
     }
 
-    public Object evaluateVar(SymbolTable symbolTable) {
+    public int evaluateVar(SymbolTable symbolTable) {
         return constExps.getFirst().evaluate(symbolTable);
     }
 }

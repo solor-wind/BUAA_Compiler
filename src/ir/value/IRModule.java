@@ -92,7 +92,7 @@ public class IRModule {
         sb.append("declare i32 @getint()\n" +
                 "declare i32 @getchar()\n" +
                 "declare void @putint(i32)\n" +
-                "declare void @putch(i8)\n" +
+                "declare void @putch(i32)\n" +
                 "declare void @putstr(i8*)\n");
         sb.append(declareGlobal()).append("\n");
         for (Function f : functions) {

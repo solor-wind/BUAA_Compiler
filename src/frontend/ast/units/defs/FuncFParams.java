@@ -2,6 +2,7 @@ package frontend.ast.units.defs;
 
 import frontend.lexer.Token;
 import ir.value.Argument;
+import ir.value.BasicBlock;
 import ir.value.Function;
 
 import java.util.ArrayList;
@@ -38,13 +39,13 @@ public class FuncFParams {
         return sb + "<FuncFParams>";
     }
 
-    public ArrayList<Argument> genIR(Function function) {
+    public ArrayList<Argument> genIR(Function function, BasicBlock basicBlock) {
         if (funcFParams.isEmpty()) {
             return new ArrayList<>();
         }
         ArrayList<Argument> args = new ArrayList<>();
         for (FuncFParam fp : funcFParams) {
-            args.add(fp.genIR(function));
+            args.add(fp.genIR(function, basicBlock));
         }
         return args;
     }

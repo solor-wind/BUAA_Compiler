@@ -5,10 +5,9 @@ import frontend.symbols.*;
 import ir.IRBuilder;
 import ir.instr.GetPtrInstr;
 import ir.type.ArrayType;
+import ir.type.IntegerType;
 import ir.type.PointerType;
-import ir.value.Function;
-import ir.value.Value;
-import ir.value.Variable;
+import ir.value.*;
 
 public class LVal {
     private Token ident;
@@ -48,7 +47,7 @@ public class LVal {
     }
 
     public boolean checkError(SymbolTable symbolTable) {
-        this.symbolTable = symbolTable;
+        symKey = symbolTable.getKeyToIR(ident.getValue());
         boolean flag = false;
         //error c
         Symbol symbol = symbolTable.getSymbol(ident.getValue());
@@ -83,16 +82,8 @@ public class LVal {
         /*TODO:不存在数组？*/
         Symbol symbol = symbolTable.getSymbol(ident.getValue());
         if (symbol instanceof VarSym varSym) {
-            if (varSym.is("ConstChar")) {
-                if (varSym.getInitVal() instanceof Integer integer) {
-                    return (char) integer.intValue();
-                }
-                return (Character) varSym.getInitVal();
-            } else if (varSym.is("IntChar")) {
-                if (varSym.getInitVal() instanceof Character character) {
-                    return (int) character;
-                }
-                return (Integer) varSym.getInitVal();
+            if (varSym.is("Const")) {
+                return varSym.getInitVal();
             }
         }
         System.out.println(ident.getLine() + " " + ident.getValue() + "LVal在evaluate时出错\n");
@@ -103,20 +94,32 @@ public class LVal {
         return type;
     }
 
-    private SymbolTable symbolTable;
+    private String symKey;
 
-    public Variable genIR(Function function) {
-        Variable var = (Variable) function.getVariable(symbolTable.getKeyToIR(ident.getValue()));
+    public Variable genIR(Function function, BasicBlock basicBlock) {
+        Variable var = (Variable) function.getVariable(symKey);
         if (lbrack == null) {
             if (var.isGlobal()) {
-                var = new Variable(var.getName(), new PointerType(var.getType()));
+                if (!var.isArray()) {
+                    var = new Variable(var.getName(), new PointerType(var.getType()));
+                } else {
+                    Variable res = new Variable(IRBuilder.getVarName(), new PointerType(((ArrayType) var.getType()).getElementType()));
+                    basicBlock.addInstruction(new GetPtrInstr(res, var, new Literal(0, new IntegerType(32))));
+                    var = res;
+                    var.setArray(true);
+                }
             }
             return var;
         }
-        Value offset = exp.genIR(function);
+        Value offset = exp.genIR(function, basicBlock);
         //TODO:value为0时，优化？
-        Variable res = new Variable(IRBuilder.getVarName(), new PointerType(((ArrayType) var.getType()).getElementType()));
-        IRBuilder.currentBlock.addInstruction(new GetPtrInstr(res, var, offset));
+        Variable res;
+        if (var.getType() instanceof PointerType) {
+            res = new Variable(IRBuilder.getVarName(), var.getType());
+        } else {
+            res = new Variable(IRBuilder.getVarName(), new PointerType(((ArrayType) var.getType()).getElementType()));
+        }
+        basicBlock.addInstruction(new GetPtrInstr(res, var, offset));
         return res;
     }
 }

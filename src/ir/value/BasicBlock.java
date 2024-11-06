@@ -1,7 +1,6 @@
 package ir.value;
 
 import ir.type.OtherType;
-import ir.type.Type;
 
 import java.util.ArrayList;
 
@@ -25,8 +24,24 @@ public class BasicBlock extends Value {
         this.nextBlock = nextBlock;
     }
 
+    public BasicBlock getPreBlock() {
+        return preBlock;
+    }
+
+    public BasicBlock getNextBlock() {
+        return nextBlock;
+    }
+
     public void addInstruction(Instruction instruction) {
         instructions.add(instruction);
+    }
+
+    public void setInstructions(ArrayList<Instruction> instructions) {
+        this.instructions = instructions;
+    }
+
+    public ArrayList<Instruction> getInstructions() {
+        return instructions;
     }
 
     @Override

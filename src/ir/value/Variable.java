@@ -6,6 +6,7 @@ public class Variable extends Value {
 
     private boolean isConstant = false;
     private boolean isGlobal = false;
+    private boolean isArray = false;
     private Object initValue;//int,ArrayList<Integer>
     private String stringConst = null;
 
@@ -25,6 +26,14 @@ public class Variable extends Value {
 
     public boolean isGlobal() {
         return isGlobal;
+    }
+
+    public void setArray(boolean isArray) {
+        this.isArray = isArray;
+    }
+
+    public boolean isArray() {
+        return isArray;
     }
 
     public void setConstant(boolean constant) {

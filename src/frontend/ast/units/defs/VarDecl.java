@@ -4,6 +4,7 @@ import frontend.ast.units.stmts.BlockItem;
 import frontend.lexer.Token;
 import frontend.symbols.SymbolTable;
 import ir.IRBuilder;
+import ir.value.BasicBlock;
 import ir.value.Function;
 import ir.value.Value;
 import ir.value.Variable;
@@ -65,17 +66,17 @@ public class VarDecl implements Decl, BlockItem {
         }
     }
 
-    public ArrayList<Variable> genGlobalIR(){
+    public ArrayList<Variable> genGlobalIR() {
         ArrayList<Variable> vars = new ArrayList<>();
-        for(VarDef varDef : varDefs){
+        for (VarDef varDef : varDefs) {
             vars.add(varDef.genGlobalIR(BType));
         }
         return vars;
     }
 
-    public void genIR(Function function){
-        for(VarDef varDef : varDefs){
-            varDef.genIR(function,BType);
+    public void genIR(Function function, BasicBlock basicBlock) {
+        for (VarDef varDef : varDefs) {
+            varDef.genIR(function, basicBlock, BType);
         }
     }
 }

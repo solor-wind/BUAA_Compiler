@@ -8,6 +8,7 @@ import ir.type.IntegerType;
 import ir.type.PointerType;
 import ir.type.Type;
 import ir.value.Argument;
+import ir.value.BasicBlock;
 import ir.value.Function;
 
 public class FuncFParam {
@@ -39,7 +40,6 @@ public class FuncFParam {
     }
 
     public void checkError(SymbolTable symbolTable) {
-        this.symbolTable = symbolTable;
         //error b
         if (symbolTable.hasDefined(ident.getValue())) {
             GetSymTable.addError(ident.getLine(), "b");
@@ -53,20 +53,20 @@ public class FuncFParam {
             }
             symbolTable.addSymbol(symbol);
             symbolTable.getFuncSym().addArg(symbol);
+            symKey = symbolTable.getKeyToIR(ident.getValue());
         }
     }
 
-    private SymbolTable symbolTable;
+    private String symKey;
 
-    public Argument genIR(Function function) {
+    public Argument genIR(Function function, BasicBlock basicBlock) {
         Type type = bType.is(TokenType.INTTK) ? new IntegerType(32) : new IntegerType(8);
         if (lbrack != null) {
             //数组转指针
             type = new PointerType(type);
         }
-        String key = symbolTable.getKeyToIR(ident.getValue());
         Argument argument = new Argument(IRBuilder.getVarName(), type);
-        function.addVariable(key, argument);
+        function.addVariable(symKey, argument);
         return argument;
     }
 }

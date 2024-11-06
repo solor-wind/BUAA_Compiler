@@ -1,17 +1,17 @@
 package frontend.symbols;
 
 public class VarSym extends Symbol {
-    private Object initVal = null;
+    private int initVal = 0;
 
     public VarSym(String name, String type) {
         super(name, type);
     }
 
-    public void setInitVal(Object initVal) {
+    public void setInitVal(int initVal) {
         this.initVal = initVal;
     }
 
-    public Object getInitVal() {
+    public int getInitVal() {
         return initVal;
     }
 }

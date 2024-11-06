@@ -6,10 +6,7 @@ import ir.IRBuilder;
 import ir.instr.LoadInstr;
 import ir.type.IntegerType;
 import ir.type.PointerType;
-import ir.value.Function;
-import ir.value.Literal;
-import ir.value.Value;
-import ir.value.Variable;
+import ir.value.*;
 
 public class PrimaryExp {
     private Token lparent;
@@ -90,20 +87,21 @@ public class PrimaryExp {
         return "Int";
     }
 
-    public Value genIR(Function function) {
+    public Value genIR(Function function, BasicBlock basicBlock) {
         if (intConst != null) {
             return new Literal(Integer.parseInt(intConst.getToken().getValue()), new IntegerType(32));
         } else if (charConst != null) {
             return new Literal(charConst.getToken().getValue().charAt(0), new IntegerType(32));
         } else if (lparent != null) {
-            return exp.genIR(function);
+            return exp.genIR(function, basicBlock);
         } else {
-            Variable var = lVal.genIR(function);
-//            if (var.isGlobal()) {
-//                var = new Variable(var.getName(), new PointerType(var.getType()));
-//            }
+            Variable var = lVal.genIR(function, basicBlock);
+            if (var.isArray()) {
+                return var;
+            }
             Variable res = new Variable(IRBuilder.getVarName(), ((PointerType) var.getType()).getBaseType());
-            IRBuilder.currentBlock.addInstruction(new LoadInstr(res, var));
+            basicBlock.addInstruction(new LoadInstr(res, var));
+            res = (Variable) IRBuilder.changeType(basicBlock, res, new IntegerType(32));
             return res;
         }
     }

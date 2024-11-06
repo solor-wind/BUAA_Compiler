@@ -4,6 +4,7 @@ import frontend.ast.units.stmts.BlockItem;
 import frontend.lexer.Token;
 import frontend.symbols.SymbolTable;
 import ir.type.Type;
+import ir.value.BasicBlock;
 import ir.value.Function;
 import ir.value.Variable;
 
@@ -67,9 +68,9 @@ public class ConstDecl implements Decl, BlockItem {
         return vars;
     }
 
-    public void genIR(Function function) {
+    public void genIR(Function function, BasicBlock basicBlock) {
         for (ConstDef constDef : constDefs) {
-            constDef.genIR(function,BType);
+            constDef.genIR(function, basicBlock, BType);
         }
     }
 }

@@ -2,6 +2,7 @@ package frontend.ast.units.stmts;
 
 import frontend.ast.units.exps.AddExp;
 import frontend.symbols.SymbolTable;
+import ir.value.BasicBlock;
 import ir.value.Function;
 import ir.value.Value;
 
@@ -29,7 +30,7 @@ public class Exp {
         return addExp.getType();
     }
 
-    public Value genIR(Function function) {
-        return addExp.genIR(function);
+    public Value genIR(Function function, BasicBlock basicBlock) {
+        return addExp.genIR(function, basicBlock);
     }
 }

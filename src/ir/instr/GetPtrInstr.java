@@ -1,6 +1,7 @@
 package ir.instr;
 
 import ir.type.ArrayType;
+import ir.type.IntegerType;
 import ir.type.PointerType;
 import ir.type.Type;
 import ir.value.Instruction;
@@ -25,7 +26,7 @@ public class GetPtrInstr extends Instruction {
             //TODO一般情况下，只有一层指针
             return res.getName() + " = getelementptr inbounds " + ptr.getBaseType() + ", " + addr + ", " + offset;
         } else {
-            return res.getName() + " = getelementptr inbounds " + addr.getType() + ", " + addr.getType() + "* " + addr.getName() + ", " + offset + ", i32 0";
+            return res.getName() + " = getelementptr inbounds " + addr.getType() + ", " + addr.getType() + "* " + addr.getName() + ", i32 0, " + offset;
         }
 
 //        String baseGap;

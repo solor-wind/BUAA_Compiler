@@ -3,6 +3,12 @@ package frontend.ast.units.stmts;
 import frontend.lexer.Token;
 import frontend.symbols.GetSymTable;
 import frontend.symbols.SymbolTable;
+import ir.IRBuilder;
+import ir.instr.StoreInstr;
+import ir.instr.TruncInstr;
+import ir.type.IntegerType;
+import ir.type.PointerType;
+import ir.value.*;
 
 public class ForStmt {
     private LVal lVal;
@@ -44,5 +50,12 @@ public class ForStmt {
         }
 
         exp.checkError(symbolTable);
+    }
+
+    public void genIR(Function function, BasicBlock basicBlock) {
+        Variable var = lVal.genIR(function, basicBlock);
+        Value value = exp.genIR(function, basicBlock);
+        value = IRBuilder.changeType(basicBlock, value, ((PointerType) (var.getType())).getBaseType());
+        basicBlock.addInstruction(new StoreInstr(value, var));
     }
 }

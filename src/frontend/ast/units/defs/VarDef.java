@@ -9,17 +9,12 @@ import frontend.symbols.GetSymTable;
 import frontend.symbols.SymbolTable;
 import frontend.symbols.VarSym;
 import ir.IRBuilder;
-import ir.instr.AllocaInstr;
-import ir.instr.StoreInstr;
-import ir.instr.GetPtrInstr;
+import ir.instr.*;
 import ir.type.ArrayType;
 import ir.type.IntegerType;
 import ir.type.PointerType;
 import ir.type.Type;
-import ir.value.Function;
-import ir.value.Literal;
-import ir.value.Value;
-import ir.value.Variable;
+import ir.value.*;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -89,7 +84,6 @@ public class VarDef {
     }
 
     public void checkError(SymbolTable symbolTable, Token BType) {
-        this.symbolTable = symbolTable;
         boolean isError = false;
         //error b
         if (symbolTable.hasDefined(ident.getValue())) {
@@ -106,17 +100,22 @@ public class VarDef {
             //初值
             if (initVal != null) {
                 if (!initVal.checkError(symbolTable)) {
-                    /*TODO:暂时不做evaluate*/
-                    if (initVal.getStringConst() != null) {
-                        char[] s = initVal.getStringConst().toCharArray();
-                        LinkedList<Object> list = new LinkedList<>();
-                        for (char c : s) {
-                            list.add((int) c);
+                    if (symbolTable.getOutID() == 1) {
+                        //仅全局变量赋予初值
+                        if (initVal.getStringConst() != null) {
+                            char[] s = initVal.getStringConst().toCharArray();
+                            LinkedList<Integer> list = new LinkedList<>();
+                            for (char c : s) {
+                                list.add((int) c);
+                            }
+                            arraySym.setInitVals(list);
+                        } else {
+                            LinkedList<Integer> list = new LinkedList<>();
+                            for (Exp exp : initVal.getExps()) {
+                                list.add(exp.evaluate(symbolTable));
+                            }
+                            arraySym.setInitVals(list);
                         }
-                        arraySym.setInitVals(list);
-                    } else {
-                        LinkedList<Object> list = new LinkedList<>(initVal.getExps());
-                        arraySym.setInitVals(list);
                     }
                 }
             }
@@ -129,7 +128,9 @@ public class VarDef {
             VarSym varSym = new VarSym(ident.getValue(), type);
             if (initVal != null && !initVal.getExps().isEmpty()) {
                 if (!initVal.checkError(symbolTable)) {
-                    varSym.setInitVal(initVal.getExps().getFirst());
+                    if (symbolTable.getOutID() == 1) {
+                        varSym.setInitVal(initVal.getExps().getFirst().evaluate(symbolTable));
+                    }
                 }
             }
 
@@ -137,9 +138,10 @@ public class VarDef {
                 symbolTable.addSymbol(varSym);
             }
         }
+        symKey = symbolTable.getKeyToIR(ident.getValue());
     }
 
-    private SymbolTable symbolTable;
+    private String symKey;
 
     public Variable genGlobalIR(Token BType) {
         //全局变量要么有给定的初值，要么就默认为0
@@ -151,33 +153,22 @@ public class VarDef {
             //char s='1';
             variable = new Variable("@" + ident.getValue(), type, false, true);
             IRBuilder.irModule.addGlobalVariable(ident.getValue(), variable);
-            if (initVal != null) {
-                variable.setInitValue(initVal.getExps().getFirst().evaluate(symbolTable));
-            } else {
-                variable.setInitValue(0);
-            }
+            VarSym varSym = (VarSym) GetSymTable.symMap.get(symKey);
+            variable.setInitValue(varSym.getInitVal());
             return variable;
         }
-        ArraySym arraySym = (ArraySym) symbolTable.getSymbol(ident.getValue());
+        ArraySym arraySym = (ArraySym) GetSymTable.symMap.get(symKey);
         type = new ArrayType(type, (arraySym).getLength());
-        variable = new Variable("@" + ident.getValue(), type,false,true);
+        variable = new Variable("@" + ident.getValue(), type, false, true);
+        variable.setArray(true);
         IRBuilder.irModule.addGlobalVariable(ident.getValue(), variable);
-        ArrayList<Integer> initVals = new ArrayList<>();
+        ArrayList<Integer> initVals = new ArrayList<>(arraySym.getInitVals());
         //TODO:字符串初始化、只初始化一部分?
-        if(arraySym.getInitVals() != null) {
-            for (Object o : arraySym.getInitVals()) {
-                if (o instanceof Exp exp) {
-                    initVals.add(exp.evaluate(symbolTable));
-                } else {
-                    initVals.add((int) o);
-                }
-            }
-        }
         variable.setInitValue(initVals);
         return variable;
     }
 
-    public void genIR(Function function, Token BType) {
+    public void genIR(Function function, BasicBlock basicBlock, Token BType) {
         Type type = BType.is(TokenType.INTTK) ? new IntegerType(32) : new IntegerType(8);
         Variable variable;
         if (lbrack == null) {
@@ -185,37 +176,31 @@ public class VarDef {
             //int a=0;
             //char s='1';
             variable = new Variable(IRBuilder.getVarName(), new PointerType(type));
-            VarSym varSym = (VarSym) symbolTable.getSymbol(ident.getValue());
-            function.addVariable(symbolTable.getKeyToIR(ident.getValue()), variable);
-            IRBuilder.currentBlock.addInstruction(new AllocaInstr(variable));
+            //VarSym varSym = (VarSym) symbolTable.getSymbol(ident.getValue());
+            function.addVariable(symKey, variable);
+            basicBlock.addInstruction(new AllocaInstr(variable));
             if (initVal != null) {
                 //variable.setInitValue(varSym.getInitVal());
-                IRBuilder.currentBlock.addInstruction(new StoreInstr(initVal.genIR(function).get(0), variable));
+                Value initValue = initVal.genIR(function, basicBlock).get(0);
+                initValue = IRBuilder.changeType(basicBlock, initValue, type);//隐式类型转换
+                basicBlock.addInstruction(new StoreInstr(initValue, variable));
             }
             return;
         }
 
         //TODO:将未初始化的部分赋值为0
-        ArraySym arraySym = (ArraySym) symbolTable.getSymbol(ident.getValue());
+        ArraySym arraySym = (ArraySym) GetSymTable.symMap.get(symKey);
         variable = new Variable(IRBuilder.getVarName(), new PointerType(type));
-        IRBuilder.currentBlock.addInstruction(new AllocaInstr(variable, arraySym.getLength()));
-        function.addVariable(symbolTable.getKeyToIR(ident.getValue()), variable);
+        variable.setArray(true);
+        basicBlock.addInstruction(new AllocaInstr(variable, arraySym.getLength()));
+        function.addVariable(symKey, variable);
 
         if (initVal != null) {
-//            ArrayList<Integer> initVals = new ArrayList<>(arraySym.getInitVals().size());
-//            for (Object o : arraySym.getInitVals()) {
-//                if (o instanceof Exp exp) {
-//                    initVals.add(exp.evaluate(symbolTable));
-//                } else {
-//                    initVals.add((int) o);
-//                }
-//            }
-//            variable.setInitValue(initVals);
-            ArrayList<Value> initVals = initVal.genIR(function);
+            ArrayList<Value> initVals = initVal.genIR(function, basicBlock);
             for (int i = 0; i < initVals.size(); i++) {
                 Variable res = new Variable(IRBuilder.getVarName(), new PointerType(type));
-                IRBuilder.currentBlock.addInstruction(new GetPtrInstr(res, variable, new Literal(i, new IntegerType(32))));
-                IRBuilder.currentBlock.addInstruction(new StoreInstr(initVals.get(i), res));
+                basicBlock.addInstruction(new GetPtrInstr(res, variable, new Literal(i, new IntegerType(32))));
+                basicBlock.addInstruction(new StoreInstr(IRBuilder.changeType(basicBlock, initVals.get(i), type), res));
             }
         }
     }

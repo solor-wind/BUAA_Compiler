@@ -2,6 +2,11 @@ package frontend.ast.units.exps;
 
 import frontend.lexer.Token;
 import frontend.symbols.SymbolTable;
+import ir.IRBuilder;
+import ir.instr.BrInstr;
+import ir.value.BasicBlock;
+import ir.value.Function;
+import ir.value.Value;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -37,5 +42,19 @@ public class LAndExp {
         for (EqExp eqExp : eqExps) {
             eqExp.checkError(symbolTable);
         }
+    }
+
+    public LinkedList<BasicBlock> genIR(Function function, BasicBlock basicBlock, BasicBlock block1, BasicBlock block2) {
+        LinkedList<BasicBlock> blocks = new LinkedList<>();
+        blocks.add(basicBlock);
+        for (EqExp eqExp : eqExps) {
+            Value value = eqExp.genIR(function, blocks.getLast());
+            BasicBlock newblock = new BasicBlock(IRBuilder.getBlockName(), function);
+            blocks.getLast().addInstruction(new BrInstr(value, newblock, block2));
+            blocks.add(newblock);
+        }
+        blocks.getLast().addInstruction(new BrInstr(block1));
+        blocks.removeFirst();
+        return blocks;
     }
 }

@@ -131,24 +131,31 @@ public class FuncDef implements Unit {
         }
         Function function = new Function("@" + funcName.getValue(), type);
         IRBuilder.irModule.addFunction(funcName.getValue(), function);
-        IRBuilder.currentFunction = function;
-        IRBuilder.currentBlock = new BasicBlock(IRBuilder.getBlockName(), function);
+        //IRBuilder.currentFunction = function;
+        BasicBlock basicBlock = new BasicBlock(IRBuilder.getBlockName(), function);
+        function.addBlock(basicBlock);
 
         if (funcFParams != null) {
-            function.setArguments(funcFParams.genIR(function));
+            function.setArguments(funcFParams.genIR(function, basicBlock));
             //给参数分配空间
             for (Argument argument : function.getArguments()) {
                 //将非指针参数替换，参数对应的映射表
                 if (!(argument.getType() instanceof PointerType)) {
                     Variable variable = new Variable(IRBuilder.getVarName(), new PointerType(argument.getType()));
                     function.changeMap(argument, variable);
-                    IRBuilder.currentBlock.addInstruction(new AllocaInstr(variable));//TODO:应该没问题吧？
-                    IRBuilder.currentBlock.addInstruction(new StoreInstr(argument, variable));
+                    basicBlock.addInstruction(new AllocaInstr(variable));//TODO:应该没问题吧？
+                    basicBlock.addInstruction(new StoreInstr(argument, variable));
+                } else {
+                    Variable variable = new Variable(argument.getName(), argument.getType());
+                    variable.setArray(true);
+                    function.changeMap(argument, variable);
                 }
             }
         }
 
-        block.genIR(function);
+        block.genIR(function, basicBlock);
+        function.sortBlock();
+        IRBuilder.blockName = 0;
         return function;
     }
 }

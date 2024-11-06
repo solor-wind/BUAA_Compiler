@@ -3,9 +3,8 @@ package frontend.ast.units.defs;
 import frontend.ast.units.stmts.Exp;
 import frontend.lexer.Token;
 import frontend.symbols.SymbolTable;
-import ir.value.Function;
-import ir.value.Value;
-import ir.value.Variable;
+import ir.type.IntegerType;
+import ir.value.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -83,10 +82,17 @@ public class InitVal {
         return flag;
     }
 
-    public ArrayList<Value> genIR(Function function) {
+    public ArrayList<Value> genIR(Function function, BasicBlock basicBlock) {
         ArrayList<Value> values = new ArrayList<>();
-        for(Exp exp : exps) {
-            values.add(exp.genIR(function));
+        if (stringConst != null) {
+            String s = stringConst.getValue();
+            for (int i = 0; i < s.length(); i++) {
+                values.add(new Literal(s.charAt(i), new IntegerType(8)));
+            }
+            return values;
+        }
+        for (Exp exp : exps) {
+            values.add(exp.genIR(function, basicBlock));
         }
         return values;
     }

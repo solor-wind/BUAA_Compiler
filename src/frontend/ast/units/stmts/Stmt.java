@@ -259,123 +259,165 @@ public class Stmt implements BlockItem {
         this.kind = kind;
     }
 
-    public void genIR(Function function) {
+    public void genIR(Function function, BasicBlock basicBlock) {
         switch (kind) {
             case 1:
-                Variable var = lVal.genIR(function);
-                Value value = exps.get(0).genIR(function);
-//                if (var.isGlobal()) {
-//                    var = new Variable(var.getName(), new PointerType(var.getType()));
-//                }
-                if (((PointerType) (var.getType())).getBaseType().is("i8")) {
-                    if (value instanceof Literal literal) {
-                        value = new Literal(literal.getValue(), new IntegerType(8));
-                    } else {
-                        Variable newValue = new Variable(IRBuilder.getVarName(), new IntegerType(8));
-                        IRBuilder.currentBlock.addInstruction(new TruncInstr(newValue, value));
-                        value = newValue;
-                    }
-                }
-                IRBuilder.currentBlock.addInstruction(new StoreInstr(value, var));
+                Variable var = lVal.genIR(function, basicBlock);
+                Value value = exps.get(0).genIR(function, basicBlock);
+                value = IRBuilder.changeType(basicBlock, value, ((PointerType) (var.getType())).getBaseType());
+                basicBlock.addInstruction(new StoreInstr(value, var));
                 break;
             case 2:
                 if (!exps.isEmpty()) {
-                    exps.get(0).genIR(function);
+                    exps.get(0).genIR(function, basicBlock);
                 }
                 break;
             case 3:
-                block.genIR(function);
+                block.genIR(function, basicBlock);
                 break;
             case 4:
-                BasicBlock block1 = new BasicBlock(IRBuilder.getVarName(), function);
-                IRBuilder.currentBlock = block1;
-                stmt1.genIR(function);
+                BasicBlock block1 = new BasicBlock(IRBuilder.getBlockName(), function);
                 BasicBlock block2 = null;
                 if (stmt2 != null) {
-                    block2 = new BasicBlock(IRBuilder.getVarName(), function);
-                    IRBuilder.currentBlock = block2;
-                    stmt2.genIR(function);
+                    block2 = new BasicBlock(IRBuilder.getBlockName(), function);
                 }
-                ((LOrExp)cond).genIR(function,block1,block2);
+                //提供成功、失败要跳转到的块
+                //获取用于分支判断的一堆块
+                LinkedList<BasicBlock> blocks = ((LOrExp) cond).genIR(function, block1, block2);
+                stmt1.genIR(function, block1);
+                if (stmt2 != null) {
+                    stmt2.genIR(function, block2);
+                }
+                //跳入分支判断
+                basicBlock.addInstruction(new BrInstr(blocks.getFirst()));
+                //返回原来块的入口，以及分割时所用的标签
+                BasicBlock bin = new BasicBlock(IRBuilder.getBlockName(), function);
+                basicBlock.addInstruction(new LabelInstr(bin));
+                //返回入口
+                block1.addInstruction(new BrInstr(bin));
+                if (stmt2 != null) {
+                    block2.addInstruction(new BrInstr(bin));
+                    blocks.getLast().addInstruction(new BrInstr(block2));
+                } else {
+                    blocks.getLast().addInstruction(new BrInstr(bin));
+                }
+                IRBuilder.connectBlock(blocks.getLast(), block1);//分支判断连接b1
+                blocks.add(block1);
+                if (stmt2 != null) {
+                    blocks.add(block2);
+                    IRBuilder.connectBlock(block1, block2);//分支判断连接b2
+                }
+                //加入map，等待后续处理
+                //function.addBlocks(blocks);
                 break;
             case 5:
+                if (forStmt1 != null) {
+                    forStmt1.genIR(function, basicBlock);
+                }
+                BasicBlock bin2 = new BasicBlock(IRBuilder.getBlockName(), function);
+                BasicBlock stmtBlock = new BasicBlock(IRBuilder.getBlockName(), function);
+
+                LinkedList<BasicBlock> blocks2 = null;
+                if (cond != null) {
+                    blocks2 = ((LOrExp) cond).genIR(function, stmtBlock, bin2);
+                    basicBlock.addInstruction(new BrInstr(blocks2.getFirst()));//跳入分支判断
+                    basicBlock.addInstruction(new LabelInstr(bin2));
+                    blocks2.getLast().addInstruction(new BrInstr(bin2));//回来
+                    IRBuilder.connectBlock(blocks2.getLast(), stmtBlock);//分支判断连接语句
+                } else {
+                    basicBlock.addInstruction(new BrInstr(stmtBlock));//直接跳入语句
+                    basicBlock.addInstruction(new LabelInstr(bin2));
+                }
+                BasicBlock forStmt2Block = new BasicBlock(IRBuilder.getBlockName(), function);
+                IRBuilder.connectBlock(stmtBlock, forStmt2Block);//连接语句和forStmt2
+
+//                LinkedList<BasicBlock> blocks2 = ((LOrExp) cond).genIR(function, stmtBlock, bin2);
+//                basicBlock.addInstruction(new BrInstr(blocks2.getFirst()));//跳入分支判断
+//                basicBlock.addInstruction(new LabelInstr(bin2));
+//                blocks2.getLast().addInstruction(new BrInstr(bin2));//回来
+//                IRBuilder.connectBlock(blocks2.getLast(), stmtBlock);//分支判断连接语句
+//                BasicBlock forStmt2Block = new BasicBlock(IRBuilder.getBlockName(), function);
+//                IRBuilder.connectBlock(stmtBlock, forStmt2Block);//连接语句和forStmt2
+
+                ArrayList<BasicBlock> forList = new ArrayList<>();
+//                forList.add(blocks2.getFirst());
+//                forList.add(stmtBlock);
+                forList.add(forStmt2Block);
+                forList.add(bin2);
+                IRBuilder.forBlock.push(forList);
+
+                stmt1.genIR(function, stmtBlock);//需要提前将当前循环信息压入栈
+                stmtBlock.addInstruction(new BrInstr(forStmt2Block));
+                IRBuilder.forBlock.pop();
+                if (forStmt2 != null) {
+                    forStmt2.genIR(function, forStmt2Block);
+                }
+                if (cond != null) {
+                    forStmt2Block.addInstruction(new BrInstr(blocks2.getFirst()));
+                } else {
+                    forStmt2Block.addInstruction(new BrInstr(stmtBlock));
+                }
+
+
                 break;
             case 6:
+                if (keyword.is(TokenType.BREAKTK)) {
+                    basicBlock.addInstruction(new BrInstr(IRBuilder.forBlock.peek().get(1)));
+                } else {
+                    basicBlock.addInstruction(new BrInstr(IRBuilder.forBlock.peek().get(0)));
+                }
                 break;
             case 7:
                 if (exps.isEmpty()) {
-                    IRBuilder.currentBlock.addInstruction(new RetInstr(null));
+                    basicBlock.addInstruction(new RetInstr(null));
                 } else {
-                    Value v = exps.get(0).genIR(function);
-                    if (!v.getType().equals(function.getType())) {
-                        if (v instanceof Literal) {
-                            IRBuilder.currentBlock.addInstruction(new RetInstr(new Literal(((Literal) v).getValue(), new IntegerType(8))));
-                        } else {
-                            Variable v2 = new Variable(IRBuilder.getVarName(), new IntegerType(8));
-                            IRBuilder.currentBlock.addInstruction(new TruncInstr(v2, v));
-                            IRBuilder.currentBlock.addInstruction(new RetInstr(v2));
-                        }
-                    } else {
-                        IRBuilder.currentBlock.addInstruction(new RetInstr(v));
-                    }
+                    Value v = exps.get(0).genIR(function, basicBlock);
+                    v = IRBuilder.changeType(basicBlock, v, function.getType());
+                    basicBlock.addInstruction(new RetInstr(v));
                 }
                 break;
             case 8:
-                Variable var8 = lVal.genIR(function);
+                Variable var8 = lVal.genIR(function, basicBlock);
                 Variable res8 = new Variable(IRBuilder.getVarName(), new IntegerType(32));
-                IRBuilder.currentBlock.addInstruction(new CallInstr(res8, IRBuilder.getLibFunction("getint"), new ArrayList<>()));
-                IRBuilder.currentBlock.addInstruction(new StoreInstr(res8, var8));
+                basicBlock.addInstruction(new CallInstr(res8, IRBuilder.getLibFunction("getint"), new ArrayList<>()));
+                basicBlock.addInstruction(new StoreInstr(res8, var8));
                 break;
             case 9:
-                Variable var9 = lVal.genIR(function);
+                Variable var9 = lVal.genIR(function, basicBlock);
                 Variable res9 = new Variable(IRBuilder.getVarName(), new IntegerType(32));
-                IRBuilder.currentBlock.addInstruction(new CallInstr(res9, IRBuilder.getLibFunction("getchar"), new ArrayList<>()));
-                Variable tmp9 = new Variable(IRBuilder.getVarName(), new IntegerType(8));
-                IRBuilder.currentBlock.addInstruction(new TruncInstr(tmp9, res9));
-                IRBuilder.currentBlock.addInstruction(new StoreInstr(tmp9, var9));
+                basicBlock.addInstruction(new CallInstr(res9, IRBuilder.getLibFunction("getchar"), new ArrayList<>()));
+                Variable tmp9 = (Variable) IRBuilder.changeType(basicBlock, res9, ((PointerType) var9.getType()).getBaseType());
+                basicBlock.addInstruction(new StoreInstr(tmp9, var9));
                 break;
             case 10:
                 //将stringConst拆成好几个putstr+putint/putchar
                 String string = stringConst.getValue();
                 int index = 0, expIndex = 0;
                 for (int i = 0; i < string.length(); i++) {
-                    //TODO强制类型转换？
                     if (string.charAt(i) == '%' && i + 1 < string.length() && string.charAt(i + 1) == 'd') {
-                        if (index != i - 1) {
-                            addPutstr(string.substring(index, i));
+                        if (index != i) {
+                            addPutstr(string.substring(index, i), basicBlock);
                         }
-                        Value value102 = exps.get(expIndex).genIR(function);
-                        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putint"), value102));
+                        Value value102 = exps.get(expIndex).genIR(function, basicBlock);
+                        value102 = IRBuilder.changeType(basicBlock, value102, new IntegerType(32));
+                        basicBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putint"), value102));
                         expIndex++;
                         index = i + 2;
                         i++;
                     } else if (string.charAt(i) == '%' && i + 1 < string.length() && string.charAt(i + 1) == 'c') {
-                        if (index != i - 1) {
-                            addPutstr(string.substring(index, i));
+                        if (index != i) {
+                            addPutstr(string.substring(index, i), basicBlock);
                         }
-                        Value value102 = exps.get(expIndex).genIR(function);
-                        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), value102));
+                        Value value102 = exps.get(expIndex).genIR(function, basicBlock);
+                        value102 = IRBuilder.changeType(basicBlock, value102, new IntegerType(32));
+                        basicBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), value102));
                         expIndex++;
                         index = i + 2;
                         i++;
-//                        if (index == i - 1) {
-//                            index += 3;
-//                            i += 2;
-//                            Value value102 = exps.get(expIndex).genIR(function);
-//                            IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), value102));
-//                            expIndex++;
-//                            continue;
-//                        }
-//                        addPutstr(string.substring(index, i));
-//                        //调用putch
-//                        Value value102 = exps.get(expIndex).genIR(function);
-//                        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), value102));
-//                        index = i + 2;
-//                        expIndex++;
                     }
                 }
                 if (index < string.length()) {
-                    addPutstr(string.substring(index));
+                    addPutstr(string.substring(index), basicBlock);
                 }
                 break;
 
@@ -396,7 +438,7 @@ public class Stmt implements BlockItem {
         return "\"" + res + "\\00\"";
     }
 
-    public void addPutstr(String s) {
+    public void addPutstr(String s, BasicBlock basicBlock) {
         //添加全局变量
         Variable var10 = new Variable(IRBuilder.getGlobalVarName(), new ArrayType(new IntegerType(8), s.length() + 1));
         var10.setConstant(true);
@@ -405,7 +447,7 @@ public class Stmt implements BlockItem {
         IRBuilder.irModule.addGlobalVariable(var10);
         //调用str
         Variable var101 = new Variable(IRBuilder.getVarName(), new PointerType(new IntegerType(8)));
-        IRBuilder.currentBlock.addInstruction(new GetPtrInstr(var101, var10, new Literal(0, new IntegerType(32))));
-        IRBuilder.currentBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putstr"), var101));
+        basicBlock.addInstruction(new GetPtrInstr(var101, var10, new Literal(0, new IntegerType(32))));
+        basicBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putstr"), var101));
     }
 }

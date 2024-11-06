@@ -62,7 +62,6 @@ public class CompUnit implements Unit {
         for (Object object : decfs) {
             if (object instanceof FuncDef funcDef) {
                 Function function = funcDef.genIR();
-                function.addBlock(IRBuilder.currentBlock);
                 IRBuilder.irModule.addFunction(function);
                 IRBuilder.varName = 0;
             } else if (object instanceof ConstDecl constDecl) {

@@ -6,10 +6,7 @@ import frontend.symbols.SymbolTable;
 import ir.IRBuilder;
 import ir.instr.BinaInstr;
 import ir.type.IntegerType;
-import ir.value.Function;
-import ir.value.Literal;
-import ir.value.Value;
-import ir.value.Variable;
+import ir.value.*;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -51,8 +48,21 @@ public class MulExp {
 
     public int evaluate(SymbolTable symbolTable) {
         int ans = 1;
-        for (UnaryExp unaryExp : unaryExps) {
-            ans *= unaryExp.evaluate(symbolTable);
+        Iterator<UnaryExp> it1 = unaryExps.iterator();
+        Iterator<Token> it2 = ops.iterator();
+        if (it1.hasNext()) {
+            ans = it1.next().evaluate(symbolTable);
+        }
+        while (it1.hasNext() && it2.hasNext()) {
+            UnaryExp unaryExp = it1.next();
+            Token op = it2.next();
+            if (op.is(TokenType.MULT)) {
+                ans *= unaryExp.evaluate(symbolTable);
+            } else if (op.is(TokenType.DIV)) {
+                ans /= unaryExp.evaluate(symbolTable);
+            } else if (op.is(TokenType.MOD)) {
+                ans %= unaryExp.evaluate(symbolTable);
+            }
         }
         return ans;
     }
@@ -61,15 +71,15 @@ public class MulExp {
         return unaryExps.getFirst().getType();
     }
 
-    public Value genIR(Function function) {
+    public Value genIR(Function function, BasicBlock basicBlock) {
         Iterator<UnaryExp> it1 = unaryExps.iterator();
         Iterator<Token> it2 = ops.iterator();
         Value value = null;
         if (it1.hasNext()) {
-            value = it1.next().genIR(function);
+            value = it1.next().genIR(function, basicBlock);
         }
         while (it2.hasNext() && it1.hasNext()) {
-            Value v2 = it1.next().genIR(function);
+            Value v2 = it1.next().genIR(function, basicBlock);
             Token op = it2.next();
             if (value instanceof Literal l1 && v2 instanceof Literal l2) {
                 if (op.is(TokenType.MULT)) {
@@ -82,11 +92,11 @@ public class MulExp {
             } else {
                 Variable var = new Variable(IRBuilder.getVarName(), new IntegerType(32));
                 if (op.is(TokenType.MULT)) {
-                    IRBuilder.currentBlock.addInstruction(new BinaInstr("mul", var, value, v2));
+                    basicBlock.addInstruction(new BinaInstr("mul", var, value, v2));
                 } else if (op.is(TokenType.DIV)) {
-                    IRBuilder.currentBlock.addInstruction(new BinaInstr("div", var, value, v2));
+                    basicBlock.addInstruction(new BinaInstr("sdiv", var, value, v2));
                 } else {
-                    IRBuilder.currentBlock.addInstruction(new BinaInstr("srem", var, value, v2));
+                    basicBlock.addInstruction(new BinaInstr("srem", var, value, v2));
                 }
                 value = var;
             }
