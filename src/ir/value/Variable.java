@@ -9,6 +9,7 @@ public class Variable extends Value {
     private boolean isArray = false;
     private Object initValue;//int,ArrayList<Integer>
     private String stringConst = null;
+    private String mipsStringConst = null;
 
     public Variable(String name, Type type) {
         super(name, type);
@@ -58,5 +59,13 @@ public class Variable extends Value {
 
     public void setStringConst(String stringConst) {
         this.stringConst = stringConst;
+    }
+
+    public String getMipsStringConst() {
+        return mipsStringConst;
+    }
+
+    public void setMipsStringConst(String mipsStringConst) {
+        this.mipsStringConst = mipsStringConst;
     }
 }

@@ -13,6 +13,14 @@ public class LoadInstr extends Instruction {
         this.addr = addr;
     }
 
+    public Variable getRes() {
+        return res;
+    }
+
+    public Variable getAddr() {
+        return addr;
+    }
+
     @Override
     public String toString() {
         return res.getName() + " = load " + res.getType() + ", " + addr;

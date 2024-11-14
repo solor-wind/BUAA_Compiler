@@ -11,11 +11,15 @@ public class RetInstr extends Instruction {
         this.value = value;
     }
 
+    public Value getValue() {
+        return value;
+    }
+
     @Override
     public String toString() {
-        if(value == null){
+        if (value == null) {
             return "ret void";
         }
-        return "ret "+value.toString();
+        return "ret " + value.toString();
     }
 }

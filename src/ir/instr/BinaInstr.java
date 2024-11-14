@@ -22,4 +22,16 @@ public class BinaInstr extends Instruction {
     public String toString() {
         return res.getName() + " = " + getName() + " " + val1.getType() + " " + val1.getName() + ", " + val2.getName();
     }
+
+    public Value getVal1() {
+        return val1;
+    }
+
+    public Value getVal2() {
+        return val2;
+    }
+
+    public Value getRes() {
+        return res;
+    }
 }

@@ -20,6 +20,22 @@ public class IcmpInstr extends Instruction {
         this.op = op;
     }
 
+    public Value getLv() {
+        return lv;
+    }
+
+    public Value getRv() {
+        return rv;
+    }
+
+    public Value getRes() {
+        return res;
+    }
+
+    public String getOp() {
+        return op;
+    }
+
     @Override
     public String toString() {
         return res.getName() + " = icmp " + op + " " + lv + ", " + rv.getName();

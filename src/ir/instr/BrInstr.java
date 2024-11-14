@@ -1,6 +1,5 @@
 package ir.instr;
 
-import frontend.ast.units.stmts.Block;
 import ir.value.BasicBlock;
 import ir.value.Instruction;
 import ir.value.Value;
@@ -20,6 +19,10 @@ public class BrInstr extends Instruction {
     public BrInstr(BasicBlock block1) {
         super("br");
         this.block1 = block1;
+    }
+
+    public Value getCond() {
+        return cond;
     }
 
     public BasicBlock getBlock1() {

@@ -28,6 +28,18 @@ public class CallInstr extends Instruction {
         this.arguments.add(new Argument(value));
     }
 
+    public ArrayList<Argument> getArguments() {
+        return arguments;
+    }
+
+    public Function getFunction() {
+        return function;
+    }
+
+    public Variable getRes() {
+        return res;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

@@ -438,11 +438,27 @@ public class Stmt implements BlockItem {
         return "\"" + res + "\\00\"";
     }
 
+    public String toMips(String string){
+        String res = string.replace(Character.toString(92), "\\\\");
+        res = res.replace(Character.toString(7), "\\a");
+        res = res.replace(Character.toString(8), "\\b");
+        res = res.replace(Character.toString(9), "\\t");
+        res = res.replace(Character.toString(10), "\\n");
+        res = res.replace(Character.toString(11), "\\v");
+        res = res.replace(Character.toString(12), "\\f");
+        res = res.replace(Character.toString(34), "\\\"");
+        res = res.replace(Character.toString(39), "\\'");
+        return "\"" + res + "\"";
+    }
+
     public void addPutstr(String s, BasicBlock basicBlock) {
+        if(s.isEmpty()){
+            return;
+        }
         //添加全局变量
         Variable var10 = new Variable(IRBuilder.getGlobalVarName(), new ArrayType(new IntegerType(8), s.length() + 1));
         var10.setConstant(true);
-        var10.setInitValue(s);
+        var10.setInitValue(toMips(s));
         var10.setStringConst("c" + toWrite(s));
         IRBuilder.irModule.addGlobalVariable(var10);
         //调用str

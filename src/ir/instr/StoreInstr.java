@@ -17,6 +17,10 @@ public class StoreInstr extends Instruction {
         return value;
     }
 
+    public Value getAddr() {
+        return addr;
+    }
+
     @Override
     public String toString() {
         return "store " + value + ", " + addr;

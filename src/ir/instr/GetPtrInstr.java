@@ -1,9 +1,6 @@
 package ir.instr;
 
-import ir.type.ArrayType;
-import ir.type.IntegerType;
 import ir.type.PointerType;
-import ir.type.Type;
 import ir.value.Instruction;
 import ir.value.Value;
 import ir.value.Variable;
@@ -18,6 +15,18 @@ public class GetPtrInstr extends Instruction {
         this.res = res;
         this.addr = addr;
         this.offset = offset;
+    }
+
+    public Variable getRes() {
+        return res;
+    }
+
+    public Variable getAddr() {
+        return addr;
+    }
+
+    public Value getOffset() {
+        return offset;
     }
 
     @Override

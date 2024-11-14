@@ -6,10 +6,12 @@ import ir.IRBuilder;
 import ir.instr.BrInstr;
 import ir.value.BasicBlock;
 import ir.value.Function;
+import ir.value.Literal;
 import ir.value.Value;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 public class LAndExp {
     //左递归文法改写
@@ -50,7 +52,15 @@ public class LAndExp {
         for (EqExp eqExp : eqExps) {
             Value value = eqExp.genIR(function, blocks.getLast());
             BasicBlock newblock = new BasicBlock(IRBuilder.getBlockName(), function);
-            blocks.getLast().addInstruction(new BrInstr(value, newblock, block2));
+            if (value instanceof Literal l) {
+                if (l.getValue() == 0) {
+                    blocks.getLast().addInstruction(new BrInstr(block2));
+                } else {
+                    blocks.getLast().addInstruction(new BrInstr(newblock));
+                }
+            } else {
+                blocks.getLast().addInstruction(new BrInstr(value, newblock, block2));
+            }
             blocks.add(newblock);
         }
         blocks.getLast().addInstruction(new BrInstr(block1));

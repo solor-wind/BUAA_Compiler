@@ -1,3 +1,4 @@
+import backend.Backend;
 import frontend.ast.Parser;
 import frontend.lexer.Lexer;
 import frontend.lexer.TokenStream;
@@ -30,9 +31,14 @@ public class Compiler {
         parser.getCompUnit().genIR();
 
         FileWriter writer = new FileWriter("llvm_ir.txt");
-        IRBuilder.irModule.toString();
         writer.write(IRBuilder.irModule.toString());
         writer.close();
+
+        Backend backend = new Backend(IRBuilder.irModule);
+        backend.run();
+        FileWriter writer2 = new FileWriter("mips.txt");
+        writer2.write(backend.objModule.toString());
+        writer2.close();
 
     }
 }
@@ -62,3 +68,5 @@ if(0||1)应当直接给出结果
     2.2语句
 TODO:printf、初值的强制类型转换、局部变量不用%1编号、代码块以及变量名的重排
 */
+//全局变量、所有常量初始化
+//float,struct,scanf,[][],++--+=-=,while
