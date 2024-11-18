@@ -15,9 +15,9 @@ public class ObjLoad extends ObjInstr {
         this.dst = dst;
         this.addr = addr;
         this.offset = offset;
-        addUseReg(this.addr, addr);
-        addUseReg(this.offset, offset);
-        addDefReg(this.dst, dst);
+        addDef(this.dst);
+        addUse(this.addr);
+        addUse(this.offset);
     }
 
     public ObjOperand getDst() {

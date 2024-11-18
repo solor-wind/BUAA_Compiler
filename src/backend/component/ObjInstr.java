@@ -3,18 +3,19 @@ package backend.component;
 import backend.operand.ObjOperand;
 import backend.operand.ObjReg;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ObjInstr {
     private String type;
-    public ArrayList<ObjReg> regDef, regUse;
-    public ArrayList<ObjReg> livein = new ArrayList<>();
+    public HashSet<ObjReg> regDef, regUse;
+    public HashSet<ObjReg> ins = new HashSet<>();
+    public HashSet<ObjReg> outs = new HashSet<>();
     public int index = -1;
 
     public ObjInstr(String type) {
         this.type = type;
-        this.regDef = new ArrayList<>();
-        this.regUse = new ArrayList<>();
+        this.regDef = new HashSet<>();
+        this.regUse = new HashSet<>();
     }
 
     public String getType() {
@@ -25,15 +26,24 @@ public class ObjInstr {
         this.type = type;
     }
 
-    private void addUse(ObjOperand reg) {
-        if (reg instanceof ObjReg) {
-            regUse.add((ObjReg) reg);
+    public HashSet<ObjReg> getRegUse() {
+        return regUse;
+    }
+
+    public void addUse(ObjOperand operand) {
+        if (operand instanceof ObjReg reg) {
+            regUse.add(reg);
+            regDef.remove(reg);
         }
     }
 
-    private void addDef(ObjOperand reg) {
-        if (reg instanceof ObjReg) {
-            regDef.add((ObjReg) reg);
+    public HashSet<ObjReg> getRegDef() {
+        return regDef;
+    }
+
+    public void addDef(ObjOperand operand) {
+        if (operand instanceof ObjReg reg) {
+            regDef.add(reg);
         }
     }
 

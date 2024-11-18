@@ -1,6 +1,6 @@
 package backend.operand;
 
-public abstract class ObjReg extends ObjOperand {
+public class ObjReg extends ObjOperand {
     public ObjReg() {
         super();
     }
@@ -8,4 +8,6 @@ public abstract class ObjReg extends ObjOperand {
     public ObjReg(String name) {
         super(name);
     }
+
+    //public int color;
 }

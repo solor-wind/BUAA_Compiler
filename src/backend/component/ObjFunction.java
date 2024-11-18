@@ -1,8 +1,10 @@
 package backend.component;
 
+import backend.operand.ObjPhyReg;
 import ir.value.Argument;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ObjFunction {
     private String name;
@@ -10,9 +12,10 @@ public class ObjFunction {
     private ArrayList<Argument> args = new ArrayList<>();
     private int stackSize = 0;
     public int allocaSize = 0;
-    public int regSize = 32;
+    public int regSize = 104;
     public int argSize = 0;
     private int allocas = 0;
+    private ArrayList<ObjPhyReg> usedPhyRegs = new ArrayList<>();
 
     public ObjFunction(String name) {
         this.name = name;
@@ -30,12 +33,12 @@ public class ObjFunction {
         return blocks;
     }
 
-    public int getStackSize() {
-        return allocaSize + regSize + argSize + 4;
+    public void setBlocks(ArrayList<ObjBlock> blocks) {
+        this.blocks = blocks;
     }
 
-    public int getNextAlloca() {
-        return argSize + regSize + 4 + allocas;
+    public int getStackSize() {
+        return allocaSize + regSize + argSize + 4;
     }
 
     public int getNextAlloca(int i) {
@@ -44,8 +47,13 @@ public class ObjFunction {
         return ans;
     }
 
-    public void addAllocas(int i) {
-        allocas += i;
+    public ArrayList<ObjPhyReg> getUsedPhyRegs() {
+        return usedPhyRegs;
+    }
+
+    public void setUsedPhyRegs(HashSet<ObjPhyReg> usedPhyRegs) {
+        this.usedPhyRegs.clear();
+        this.usedPhyRegs.addAll(usedPhyRegs);
     }
 
     @Override

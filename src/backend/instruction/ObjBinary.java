@@ -24,9 +24,9 @@ public class ObjBinary extends ObjInstr {
         this.dst = dst;
         this.src1 = src1;
         this.src2 = src2;
-        addDefReg(this.dst, dst);
-        addUseReg(this.src1, src1);
-        addUseReg(this.src2, src2);
+        addDef(this.dst);
+        addUse(this.src1);
+        addUse(this.src2);
     }
 
     public ObjOperand getDst() {

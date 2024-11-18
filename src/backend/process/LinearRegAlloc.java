@@ -249,7 +249,7 @@ public class LinearRegAlloc {
                         load.setOffset(t2);
                         newInstrs.add(new ObjLoad("lw", t2, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg2))));
                     } else if (load.getOffset() instanceof ObjImm imm) {
-                        load.setOffset(new ObjImm(imm.getImmediate() + spilledSize));
+                        load.setOffset(new ObjImm(imm.getImmediate() + spilledSize));//更改了load参数时的偏移
                     }
                     newInstrs.add(load);
                     if (virReg != null) {

@@ -13,6 +13,7 @@ public class ObjJ extends ObjInstr {
     public ObjJ(String name, ObjOperand operand) {
         super(name);
         this.operand = operand;
+        addUse(operand);
     }
 
     public ObjOperand getOperand() {

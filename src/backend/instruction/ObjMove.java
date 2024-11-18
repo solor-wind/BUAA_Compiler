@@ -13,8 +13,8 @@ public class ObjMove extends ObjInstr {
         super(type);
         this.src = src;
         this.dst = dst;
-        addDefReg(this.dst, dst);
-        addUseReg(this.src, src);
+        addDef(this.dst);
+        addUse(this.src);
     }
 
     public ObjOperand getSrc() {

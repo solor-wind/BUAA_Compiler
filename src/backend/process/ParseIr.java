@@ -1,5 +1,6 @@
 package backend.process;
 
+import backend.Backend;
 import backend.component.*;
 import backend.instruction.*;
 import backend.operand.*;
@@ -15,6 +16,7 @@ public class ParseIr {
     private IRModule irModule;
     private ObjModule objModule;
     private HashMap<String, ObjGlobalVar> globalMap = new HashMap<>();
+    private HashMap<String, ObjFunction> functionMap = new HashMap<>();
 
     private ObjFunction currentFunction;
     private ObjBlock currentBlock;
@@ -46,11 +48,18 @@ public class ParseIr {
 
     public void parseFunctions() {
         for (Function function : irModule.functions) {
-            ObjFunction objFunction = new ObjFunction(function.getName().substring(1));
+            ObjFunction objFunction;
+            if (functionMap.containsKey(function.getName().substring(1))) {
+                objFunction = functionMap.get(function.getName());
+            } else {
+                objFunction = new ObjFunction(function.getName().substring(1));
+                functionMap.put(objFunction.getName(), objFunction);
+            }
             currentFunction = objFunction;
             objModule.addFunction(objFunction);
             HashMap<Value, ObjReg> opMap = new HashMap<>();
             HashMap<Value, ObjBlock> blockMap = new HashMap<>();
+            ObjBlock.blockIndex = 0;
             solveStack(objFunction, function, opMap);
 
             for (BasicBlock block : function.getBlocks()) {
@@ -135,7 +144,7 @@ public class ParseIr {
             }
         }
         if (globalMap.containsKey(value.getName())) {
-            return new ObjLabel(globalMap.get(value.getName()).getName());
+            return new ObjLabel(globalMap.get(value.getName()));
         }
         if (value instanceof Literal l) {
             return new ObjImm(l.getValue());
@@ -250,15 +259,22 @@ public class ParseIr {
                 b2 = new ObjBlock(currentFunction);
                 blockMap.put(brInstr.getBlock2(), b2);
             }
-            objBlock.addInstr(new ObjBranch("beqz", reg, new ObjLabel(b2.getName())));
+            objBlock.addInstr(new ObjBranch("beqz", reg, new ObjLabel(b2)));
+            objBlock.addNextBlock(b2);
+            b2.addPreBlock(objBlock);
         }
 
         if (blockMap.containsKey(brInstr.getBlock1())) {
-            objBlock.addInstr(new ObjJ("j", new ObjLabel(blockMap.get(brInstr.getBlock1()).getName())));
+            ObjBlock b1 = blockMap.get(brInstr.getBlock1());
+            objBlock.addInstr(new ObjJ("j", new ObjLabel(b1)));
+            objBlock.addNextBlock(b1);
+            b1.addPreBlock(objBlock);
         } else {
             ObjBlock newBlock = new ObjBlock(currentFunction);
             blockMap.put(brInstr.getBlock1(), newBlock);
-            objBlock.addInstr(new ObjJ("j", new ObjLabel(newBlock.getName())));
+            objBlock.addInstr(new ObjJ("j", new ObjLabel(newBlock)));
+            objBlock.addNextBlock(newBlock);
+            newBlock.addPreBlock(objBlock);
         }
     }
 
@@ -277,9 +293,11 @@ public class ParseIr {
          * 再传参数
          * 最后调用
          * */
-        currentBlock.addInstr(new ObjStore("sw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + 32)));
-        for (int i = 0; i < 32; i += 4) {
-            currentBlock.addInstr(new ObjStore("sw", ObjPhyReg.regs.get(16 + i / 4), ObjPhyReg.SP, new ObjImm(currentFunction.argSize + i)));
+        currentBlock.addInstr(new ObjStore("sw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
+        if (!Backend.graphColor) {
+            for (int i = 0; i < 32; i += 4) {
+                currentBlock.addInstr(new ObjStore("sw", ObjPhyReg.regs.get(16 + i / 4), ObjPhyReg.SP, new ObjImm(currentFunction.argSize + i)));
+            }
         }
         int argNum = 0;
         for (Argument arg : callInstr.getArguments()) {
@@ -301,11 +319,20 @@ public class ParseIr {
             argNum++;
         }
 
-        currentBlock.addInstr(new ObjJ("jal", new ObjLabel(callInstr.getFunction().getName().substring(1))));
+        if (functionMap.containsKey(callInstr.getFunction().getName().substring(1))) {
+            currentBlock.addInstr(new ObjJ("jal", new ObjLabel(functionMap.get(callInstr.getFunction().getName().substring(1)))));
+        } else {
+            ObjFunction objFunction = new ObjFunction(callInstr.getFunction().getName().substring(1));
+            functionMap.put(objFunction.getName(), objFunction);
+            currentBlock.addInstr(new ObjJ("jal", new ObjLabel(objFunction)));
+        }
 
-        currentBlock.addInstr(new ObjLoad("lw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + 32)));
-        for (int i = 0; i < 32; i += 4) {
-            currentBlock.addInstr(new ObjLoad("lw", ObjPhyReg.regs.get(16 + i / 4), ObjPhyReg.SP, new ObjImm(currentFunction.argSize + i)));
+
+        currentBlock.addInstr(new ObjLoad("lw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
+        if (!Backend.graphColor) {
+            for (int i = 0; i < 32; i += 4) {
+                currentBlock.addInstr(new ObjLoad("lw", ObjPhyReg.regs.get(16 + i / 4), ObjPhyReg.SP, new ObjImm(currentFunction.argSize + i)));
+            }
         }
         if (callInstr.getRes() != null) {
             ObjOperand res = parseOperand(callInstr.getRes(), opMap);

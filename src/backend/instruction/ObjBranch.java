@@ -12,6 +12,7 @@ public class ObjBranch extends ObjInstr {
         super(type);
         this.reg = reg;
         this.label = label;
+        addUse(reg);
     }
 
     public ObjReg getReg() {

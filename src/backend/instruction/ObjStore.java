@@ -16,9 +16,9 @@ public class ObjStore extends ObjInstr {
         this.pointer = pointer;
         this.value = value;
         this.offset = offset;
-        addUseReg(this.pointer, pointer);
-        addUseReg(this.value, value);
-        addUseReg(this.offset, offset);
+        addUse(this.pointer);
+        addUse(this.value);
+        addUse(this.offset);
     }
 
     public ObjOperand getPointer() {
