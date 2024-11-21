@@ -99,6 +99,9 @@ public class LVal {
     public Variable genIR(Function function, BasicBlock basicBlock) {
         Variable var = (Variable) function.getVariable(symKey);
         if (lbrack == null) {
+            if(var.isConstant()){
+                return var;
+            }
             if (var.isGlobal()) {
                 if (!var.isArray()) {
                     var = new Variable(var.getName(), new PointerType(var.getType()));

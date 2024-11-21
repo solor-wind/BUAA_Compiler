@@ -5,6 +5,7 @@ import frontend.lexer.TokenStream;
 import frontend.symbols.GetSymTable;
 import ir.IRBuilder;
 import ir.value.IRModule;
+import midOPT.OPT;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,15 +31,22 @@ public class Compiler {
         IRBuilder.initLibfunc();
         parser.getCompUnit().genIR();
 
-        FileWriter writer = new FileWriter("llvm_ir.txt");
+        FileWriter writer = new FileWriter("llvm_ir_no_opt.txt");
         writer.write(IRBuilder.irModule.toString());
         writer.close();
 
-        Backend backend = new Backend(IRBuilder.irModule);
-        backend.run();
-        FileWriter writer2 = new FileWriter("mips.txt");
-        writer2.write(backend.objModule.toString());
-        writer2.close();
+        OPT opt = new OPT(IRBuilder.irModule);
+        opt.run();
+
+        FileWriter writer3 = new FileWriter("llvm_ir.txt");
+        writer3.write(IRBuilder.irModule.toString());
+        writer3.close();
+
+//        Backend backend = new Backend(IRBuilder.irModule);
+//        backend.run();
+//        FileWriter writer2 = new FileWriter("mips.txt");
+//        writer2.write(backend.objModule.toString());
+//        writer2.close();
 
     }
 }
@@ -73,3 +81,4 @@ TODO:printf、初值的强制类型转换、局部变量不用%1编号、代码�
 //删除未使用的局部变量、替换所有常量
 //调用参数时，按需保存当前寄存器
 //合并基本块合并得更彻底些
+//数组长度为1的变量转成非数组类型（注意传参）

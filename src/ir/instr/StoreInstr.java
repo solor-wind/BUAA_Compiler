@@ -17,6 +17,10 @@ public class StoreInstr extends Instruction {
         return value;
     }
 
+    public void setValue(Value value) {
+        this.value = value;
+    }
+
     public Value getAddr() {
         return addr;
     }

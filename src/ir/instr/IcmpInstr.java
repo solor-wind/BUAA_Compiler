@@ -24,8 +24,16 @@ public class IcmpInstr extends Instruction {
         return lv;
     }
 
+    public void setLv(Value lv) {
+        this.lv = lv;
+    }
+
     public Value getRv() {
         return rv;
+    }
+
+    public void setRv(Value rv) {
+        this.rv = rv;
     }
 
     public Value getRes() {

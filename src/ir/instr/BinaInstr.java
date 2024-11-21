@@ -27,11 +27,23 @@ public class BinaInstr extends Instruction {
         return val1;
     }
 
+    public void setVal1(Value val1) {
+        this.val1 = val1;
+    }
+
     public Value getVal2() {
         return val2;
     }
 
+    public void setVal2(Value val2) {
+        this.val2 = val2;
+    }
+
     public Value getRes() {
         return res;
+    }
+
+    public void setRes(Value res) {
+        this.res = res;
     }
 }

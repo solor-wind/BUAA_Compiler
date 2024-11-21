@@ -36,6 +36,10 @@ public class Function extends Value {
         return blocks;
     }
 
+    public void setBlocks(ArrayList<BasicBlock> blocks) {
+        this.blocks = blocks;
+    }
+
     public void addBlock(BasicBlock block) {
         blocks.add(block);
         blockMap.put(block.getName(), block);
@@ -116,7 +120,7 @@ public class Function extends Value {
                 ArrayList<Instruction> tmpInstrs = newblocks.get(i).getInstructions();
                 boolean tmFlag = false;
                 for (int j = 0; j < tmpInstrs.size(); j++) {
-                    if (tmpInstrs.get(j) instanceof BrInstr) {
+                    if (tmpInstrs.get(j) instanceof BrInstr || tmpInstrs.get(j) instanceof RetInstr) {
                         tmpInstrs = new ArrayList<>(tmpInstrs.subList(0, j + 1));
                         tmFlag = true;
                         break;

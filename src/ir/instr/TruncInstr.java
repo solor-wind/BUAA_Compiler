@@ -34,6 +34,10 @@ public class TruncInstr extends Instruction {
         return val;
     }
 
+    public void setVal(Value val) {
+        this.val = val;
+    }
+
     @Override
     public String toString() {
         return res.getName() + " = trunc " + fromType + " " + val.getName() + " to " + toType;

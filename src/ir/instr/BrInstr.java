@@ -25,6 +25,10 @@ public class BrInstr extends Instruction {
         return cond;
     }
 
+    public void setCond(Value cond) {
+        this.cond = cond;
+    }
+
     public BasicBlock getBlock1() {
         return block1;
     }

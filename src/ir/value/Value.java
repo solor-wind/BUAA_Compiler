@@ -17,6 +17,10 @@ public class Value {
         return name;
     }
 
+    public void changeName(String name) {
+        this.name = name;
+    }
+
     public Type getType() {
         return type;
     }
@@ -28,7 +32,6 @@ public class Value {
 //    public boolean isType(String s){
 //
 //    }
-
     @Override
     public String toString() {
         return type + " " + name;
@@ -36,7 +39,9 @@ public class Value {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
         if (o instanceof Value value) {
             return name.equals(value.name) && type.equals(value.type);
         }

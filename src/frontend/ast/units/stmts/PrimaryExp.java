@@ -99,6 +99,12 @@ public class PrimaryExp {
             if (var.isArray()) {
                 return var;
             }
+            if (var.isConstant()) {
+                if(var.getType() instanceof PointerType ptr){
+                    return new Literal((int) var.getInitValue(), ptr.getBaseType());
+                }
+                return new Literal((int) var.getInitValue(), var.getType());
+            }
             Variable res = new Variable(IRBuilder.getVarName(), ((PointerType) var.getType()).getBaseType());
             basicBlock.addInstruction(new LoadInstr(res, var));
             res = (Variable) IRBuilder.changeType(basicBlock, res, new IntegerType(32));

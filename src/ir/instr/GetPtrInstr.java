@@ -1,6 +1,7 @@
 package ir.instr;
 
 import ir.type.PointerType;
+import ir.type.VoidType;
 import ir.value.Instruction;
 import ir.value.Value;
 import ir.value.Variable;
@@ -27,6 +28,10 @@ public class GetPtrInstr extends Instruction {
 
     public Value getOffset() {
         return offset;
+    }
+
+    public void setOffset(Value offset) {
+        this.offset = offset;
     }
 
     @Override

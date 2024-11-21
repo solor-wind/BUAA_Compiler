@@ -148,8 +148,8 @@ public class ConstDef {
             VarSym varSym = (VarSym) GetSymTable.symMap.get(symKey);
             variable.setInitValue(varSym.getInitVal());
             function.addVariable(symKey, variable);
-            basicBlock.addInstruction(new AllocaInstr(variable));
-            basicBlock.addInstruction(new StoreInstr(new Literal((int) (variable.getInitValue()), type), variable));
+            //basicBlock.addInstruction(new AllocaInstr(variable));
+            //basicBlock.addInstruction(new StoreInstr(new Literal((int) (variable.getInitValue()), type), variable));
             return;
         }
 

@@ -12,7 +12,7 @@ public class BasicBlock extends Value {
     private ArrayList<Instruction> instructions = new ArrayList<>();
 
     public BasicBlock(String name, Function function) {
-        super(name, new OtherType("basicblock"));
+        super(function.getName().substring(1) + "_" + name, new OtherType("basicblock"));
         this.function = function;
     }
 
@@ -34,6 +34,10 @@ public class BasicBlock extends Value {
 
     public void addInstruction(Instruction instruction) {
         instructions.add(instruction);
+    }
+
+    public void addFirstInstruction(Instruction instruction) {
+        instructions.add(0, instruction);
     }
 
     public void setInstructions(ArrayList<Instruction> instructions) {
