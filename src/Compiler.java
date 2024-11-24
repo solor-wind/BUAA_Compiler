@@ -38,15 +38,15 @@ public class Compiler {
         OPT opt = new OPT(IRBuilder.irModule);
         opt.run();
 
-        FileWriter writer3 = new FileWriter("llvm_ir.txt");
+        FileWriter writer3 = new FileWriter("llvm_ir_removePhi.txt");
         writer3.write(IRBuilder.irModule.toString());
         writer3.close();
 
-//        Backend backend = new Backend(IRBuilder.irModule);
-//        backend.run();
-//        FileWriter writer2 = new FileWriter("mips.txt");
-//        writer2.write(backend.objModule.toString());
-//        writer2.close();
+        Backend backend = new Backend(IRBuilder.irModule);
+        backend.run();
+        FileWriter writer2 = new FileWriter("mips.txt");
+        writer2.write(backend.objModule.toString());
+        writer2.close();
 
     }
 }
@@ -79,6 +79,6 @@ TODO:printf、初值的强制类型转换、局部变量不用%1编号、代码�
 //全局变量、所有常量初始化
 //float,struct,scanf,[][],++--+=-=,while
 //删除未使用的局部变量、替换所有常量
-//调用参数时，按需保存当前寄存器
 //合并基本块合并得更彻底些
 //数组长度为1的变量转成非数组类型（注意传参）
+//函数参数按需取

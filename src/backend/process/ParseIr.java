@@ -8,6 +8,7 @@ import ir.instr.*;
 import ir.type.IntegerType;
 import ir.type.PointerType;
 import ir.value.*;
+import utils.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,6 +89,8 @@ public class ParseIr {
                         parseIcmp(opMap, icmpInstr);
                     } else if (instr instanceof LoadInstr loadInstr) {
                         parseLoad(opMap, loadInstr);
+                    } else if (instr instanceof PCInstr pc) {
+                        parsePC(opMap, pc);
                     } else if (instr instanceof RetInstr retInstr) {
                         parseRet(opMap, retInstr);
                     } else if (instr instanceof StoreInstr storeInstr) {
@@ -95,7 +98,6 @@ public class ParseIr {
                     } else if (instr instanceof TruncInstr || instr instanceof ZextInstr) {
                         parseChangeType(opMap, instr);
                     }
-
                 }
             }
         }
@@ -173,11 +175,19 @@ public class ParseIr {
         ObjOperand res = parseOperand(binaInstr.getRes(), opMap);
         ObjOperand val1 = parseOperand(binaInstr.getVal1(), opMap);
         ObjOperand val2 = parseOperand(binaInstr.getVal2(), opMap);
-//        if (val1 instanceof ObjImm) {
-//            ObjOperand tmp = val1;
-//            val1 = val2;
-//            val2 = tmp;
-//        }
+        if (val1 instanceof ObjImm imm1 && val2 instanceof ObjImm imm2) {
+            currentBlock.addInstr(new ObjMove("li", res, new ObjImm(
+                    switch (binaInstr.getName()) {
+                        case "add" -> imm1.getImmediate() + imm2.getImmediate();
+                        case "sub" -> imm1.getImmediate() - imm2.getImmediate();
+                        case "mul" -> imm1.getImmediate() * imm2.getImmediate();
+                        case "sdiv" -> imm1.getImmediate() / imm2.getImmediate();
+                        case "srem" -> imm1.getImmediate() % imm2.getImmediate();
+                        default -> 0;
+                    }
+            )));
+            return;
+        }
         switch (binaInstr.getName()) {
             case "add":
                 if (val1 instanceof ObjImm) {
@@ -203,11 +213,6 @@ public class ParseIr {
                 }
                 break;
             case "mul":
-//                if (val2 instanceof ObjImm objImm) {
-//                    ObjOperand tmp = new ObjVirReg();
-//                    objBlock.addInstr(new ObjMove(tmp, val2));
-//                    val2 = tmp;
-//                }
                 if (val1 instanceof ObjImm) {
                     ObjOperand tmp = val1;
                     val1 = val2;
@@ -216,11 +221,6 @@ public class ParseIr {
                 objBlock.addInstr(new ObjBinary("mul", res, val1, val2));
                 break;
             case "sdiv":
-//                if (val2 instanceof ObjImm objImm) {
-//                    ObjOperand tmp = new ObjVirReg();
-//                    objBlock.addInstr(new ObjMove(tmp, val2));
-//                    val2 = tmp;
-//                }
                 if (val1 instanceof ObjImm) {
                     ObjVirReg virReg = new ObjVirReg();
                     objBlock.addInstr(new ObjMove("li", virReg, val1));
@@ -230,11 +230,6 @@ public class ParseIr {
                 }
                 break;
             case "srem":
-//                if (val2 instanceof ObjImm objImm) {
-//                    ObjOperand tmp = new ObjVirReg();
-//                    objBlock.addInstr(new ObjMove(tmp, val2));
-//                    val2 = tmp;
-//                }
                 if (val1 instanceof ObjImm) {
                     ObjVirReg virReg = new ObjVirReg();
                     objBlock.addInstr(new ObjMove("li", virReg, val1));
@@ -300,13 +295,16 @@ public class ParseIr {
             }
         }
         int argNum = 0;
+        ArrayList<ObjInstr> tmpInstrs = new ArrayList<>();
         for (Argument arg : callInstr.getArguments()) {
             ObjOperand operand = parseOperand(arg, opMap);
             if (argNum < 4) {
                 if (operand instanceof ObjImm) {
-                    currentBlock.addInstr(new ObjMove("li", ObjPhyReg.regs.get(4 + argNum), operand));
+                    tmpInstrs.add(new ObjMove("li", ObjPhyReg.regs.get(4 + argNum), operand));
+                    //currentBlock.addInstr(new ObjMove("li", ObjPhyReg.regs.get(4 + argNum), operand));
                 } else {
-                    currentBlock.addInstr(new ObjMove("move", ObjPhyReg.regs.get(4 + argNum), operand));
+                    tmpInstrs.add(new ObjMove("move", ObjPhyReg.regs.get(4 + argNum), operand));
+                    //currentBlock.addInstr(new ObjMove("move", ObjPhyReg.regs.get(4 + argNum), operand));
                 }
             } else {
                 if (operand instanceof ObjImm) {
@@ -317,6 +315,10 @@ public class ParseIr {
                 currentBlock.addInstr(new ObjStore("sw", operand, ObjPhyReg.SP, new ObjImm((argNum - 4) * 4)));
             }
             argNum++;
+        }
+        //最后传前四个
+        for (ObjInstr tmpInstr : tmpInstrs) {
+            currentBlock.addInstr(tmpInstr);
         }
 
         if (functionMap.containsKey(callInstr.getFunction().getName().substring(1))) {
@@ -433,6 +435,20 @@ public class ParseIr {
         ObjOperand res = parseOperand(icmpInstr.getRes(), opMap);
         ObjOperand lv = parseOperand(icmpInstr.getLv(), opMap);
         ObjOperand rv = parseOperand(icmpInstr.getRv(), opMap);
+        if (lv instanceof ObjImm imm1 && rv instanceof ObjImm imm2) {
+            currentBlock.addInstr(new ObjMove("li", res, new ObjImm(
+                    switch (icmpInstr.getOp()) {
+                        case "eq" -> imm1.getImmediate() == imm2.getImmediate() ? 1 : 0;
+                        case "ne" -> imm1.getImmediate() != imm2.getImmediate() ? 1 : 0;
+                        case "sgt" -> imm1.getImmediate() > imm2.getImmediate() ? 1 : 0;
+                        case "sge" -> imm1.getImmediate() >= imm2.getImmediate() ? 1 : 0;
+                        case "slt" -> imm1.getImmediate() < imm2.getImmediate() ? 1 : 0;
+                        case "sle" -> imm1.getImmediate() <= imm2.getImmediate() ? 1 : 0;
+                        default -> 0;
+                    }
+            )));
+            return;
+        }
         //eq,ne,sgt,sge,slt,sle
         if (lv instanceof ObjImm) {
             switch (icmpInstr.getOp()) {
@@ -466,6 +482,49 @@ public class ParseIr {
             currentBlock.addInstr(new ObjLoad("lb", res, addr, new ObjImm(0)));
         } else {
             currentBlock.addInstr(new ObjLoad("lw", res, addr, new ObjImm(0)));
+        }
+    }
+
+    public void parsePC(HashMap<Value, ObjReg> opMap, PCInstr pc) {
+        ArrayList<Pair<Value, Value>> moves = pc.getMoves();
+        HashMap<Value, ObjReg> tmp = new HashMap<>();//value对应的临时变量
+        for (int i = 0; i < moves.size(); i++) {
+            Pair<Value, Value> pair = moves.get(i);
+            boolean flag = false;
+            for (int j = i + 1; j < moves.size(); j++) {
+                Pair<Value, Value> pair2 = moves.get(j);
+                if (pair.getFirst().equals(pair2.getSecond())) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag) {
+                //a<-b
+                //c<-a
+                //TODO处理方式可以优化
+                ObjOperand res = parseOperand(pair.getFirst(), opMap);
+                tmp.put(pair.getFirst(), new ObjVirReg());
+                ObjOperand value = parseOperand(pair.getSecond(), opMap);
+                currentBlock.addInstr(new ObjMove("move", tmp.get(pair.getFirst()), res));
+                if (value instanceof ObjImm) {
+                    currentBlock.addInstr(new ObjMove("li", res, value));
+                } else {
+                    currentBlock.addInstr(new ObjMove("move", res, value));
+                }
+            } else {
+                ObjOperand res = parseOperand(pair.getFirst(), opMap);
+                ObjOperand value;
+                if (tmp.containsKey(pair.getSecond())) {
+                    value = tmp.get(pair.getSecond());
+                } else {
+                    value = parseOperand(pair.getSecond(), opMap);
+                }
+                if (value instanceof ObjImm) {
+                    currentBlock.addInstr(new ObjMove("li", res, value));
+                } else {
+                    currentBlock.addInstr(new ObjMove("move", res, value));
+                }
+            }
         }
     }
 
@@ -519,10 +578,18 @@ public class ParseIr {
             }
         }
         if (flag) {
-            currentBlock.addInstr(new ObjBinary("andi", res, val, new ObjImm(255)));
+            if (val instanceof ObjImm imm) {
+                currentBlock.addInstr(new ObjMove("li", res, new ObjImm(imm.getImmediate() & 255)));
+            } else {
+                currentBlock.addInstr(new ObjBinary("andi", res, val, new ObjImm(255)));
+            }
         } else {
             //TODO存疑
-            currentBlock.addInstr(new ObjMove("move", res, val));
+            if (val instanceof ObjImm imm) {
+                currentBlock.addInstr(new ObjMove("li", res, val));
+            } else {
+                currentBlock.addInstr(new ObjMove("move", res, val));
+            }
         }
     }
 }

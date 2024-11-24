@@ -70,8 +70,13 @@ public class ObjOperand {
         return ((ObjOperand) obj).name.equals(this.name);
     }
 
+    private Integer hashCode = null;
+
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        if (hashCode == null) {
+            hashCode = Objects.hash(name);
+        }
+        return hashCode;
     }
 }

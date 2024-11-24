@@ -33,8 +33,16 @@ public class BrInstr extends Instruction {
         return block1;
     }
 
+    public void setBlock1(BasicBlock block1) {
+        this.block1 = block1;
+    }
+
     public BasicBlock getBlock2() {
         return block2;
+    }
+
+    public void setBlock2(BasicBlock block2) {
+        this.block2 = block2;
     }
 
     @Override

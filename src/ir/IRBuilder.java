@@ -60,6 +60,10 @@ public class IRBuilder {
         return "b" + blockName++;
     }
 
+    public static String getBlockName(Function function) {
+        return function.getName().substring(1) + "_b" + blockName++;
+    }
+
     /**
      * 接上currentblock并修改内部链表关系，然后替换currentBlock
      */

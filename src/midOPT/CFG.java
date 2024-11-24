@@ -2,10 +2,7 @@ package midOPT;
 
 import ir.IRBuilder;
 import ir.instr.BrInstr;
-import ir.value.BasicBlock;
-import ir.value.Function;
-import ir.value.IRModule;
-import ir.value.Instruction;
+import ir.value.*;
 import utils.Pair;
 
 import java.util.ArrayList;
