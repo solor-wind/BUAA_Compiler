@@ -174,6 +174,7 @@ public class UnaryExp {
             if (!(f.getType() instanceof VoidType)) {
                 res = new Variable(IRBuilder.getVarName(), f.getType());
             }
+            function.addCalledFunction(f);
             basicBlock.addInstruction(new CallInstr(res, f, arguments));
             if (!flag) {
                 //仍然返回i32

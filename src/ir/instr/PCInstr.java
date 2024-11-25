@@ -18,6 +18,8 @@ public class PCInstr extends Instruction {
     }
 
     public void addMove(Value res, Value value) {
+        defs.add(res);
+        uses.add(value);
         moves.add(new Pair<>(res, value));
     }
 }

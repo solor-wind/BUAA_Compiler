@@ -12,9 +12,11 @@ public class CallInstr extends Instruction {
     public CallInstr(Variable res, Function function, ArrayList<Argument> arguments) {
         super("call");
         this.res = res;
+        defs.add(res);
         this.function = function;
         this.arguments = arguments;
         for (int i = 0; i < arguments.size(); i++) {
+            uses.add(arguments.get(i));
             if (!function.getArguments().get(i).getType().equals(arguments.get(i).getType())) {
                 throw new RuntimeException();
             }
@@ -24,12 +26,21 @@ public class CallInstr extends Instruction {
     public CallInstr(Variable res, Function function, Value value) {
         super("call");
         this.res = res;
+        defs.add(res);
         this.function = function;
         this.arguments.add(new Argument(value));
+        uses.add(value);
     }
 
     public ArrayList<Argument> getArguments() {
         return arguments;
+    }
+
+    public void changeUses(int index, Value value) {
+        if (!uses.contains(value)) {
+            uses.add(value);
+            uses.remove(arguments.get(index));
+        }
     }
 
     public Function getFunction() {

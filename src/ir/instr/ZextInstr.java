@@ -24,6 +24,8 @@ public class ZextInstr extends Instruction {
         this.val = val;
         this.fromType = val.getType();
         this.toType = res.getType();
+        defs.add(res);
+        uses.add(val);
     }
 
     public Value getRes() {
@@ -35,6 +37,8 @@ public class ZextInstr extends Instruction {
     }
 
     public void setVal(Value val) {
+        uses.remove(this.val);
+        uses.add(val);
         this.val = val;
     }
 

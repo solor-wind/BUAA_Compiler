@@ -10,7 +10,9 @@ public class LoadInstr extends Instruction {
     public LoadInstr(Variable res, Variable addr) {
         super("load");
         this.res = res;
+        defs.add(res);
         this.addr = addr;
+        uses.add(addr);
     }
 
     public Variable getRes() {

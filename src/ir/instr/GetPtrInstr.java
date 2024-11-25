@@ -14,8 +14,11 @@ public class GetPtrInstr extends Instruction {
     public GetPtrInstr(Variable res, Variable addr, Value offset) {
         super("getelementptr");
         this.res = res;
+        defs.add(res);
         this.addr = addr;
+        uses.add(addr);
         this.offset = offset;
+        uses.add(offset);
     }
 
     public Variable getRes() {
@@ -31,6 +34,8 @@ public class GetPtrInstr extends Instruction {
     }
 
     public void setOffset(Value offset) {
+        uses.remove(this.offset);
+        uses.add(offset);
         this.offset = offset;
     }
 

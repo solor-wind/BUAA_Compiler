@@ -16,6 +16,8 @@ public class TruncInstr extends Instruction {
         this.val = val;
         this.fromType = fromType;
         this.toType = toType;
+        uses.add(val);
+        defs.add(res);
     }
 
     public TruncInstr(Value res, Value val) {
@@ -24,6 +26,8 @@ public class TruncInstr extends Instruction {
         this.val = val;
         this.fromType = val.getType();
         this.toType = res.getType();
+        uses.add(val);
+        defs.add(res);
     }
 
     public Value getRes() {
@@ -35,6 +39,8 @@ public class TruncInstr extends Instruction {
     }
 
     public void setVal(Value val) {
+        uses.remove(this.val);
+        uses.add(val);
         this.val = val;
     }
 

@@ -15,6 +15,7 @@ public class PhiInstr extends Instruction {
     public PhiInstr(Variable res) {
         super("phi");
         this.res = res;
+        defs.add(res);
     }
 
     public Variable getRes() {
@@ -27,6 +28,7 @@ public class PhiInstr extends Instruction {
 
     public void addValLabel(Pair<Value, BasicBlock> pair) {
         valLabel.add(pair);
+        uses.add(pair.getFirst());
     }
 
     @Override

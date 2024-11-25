@@ -14,6 +14,7 @@ public class BrInstr extends Instruction {
         this.cond = cond;
         this.block1 = block1;
         this.block2 = block2;
+        uses.add(cond);
     }
 
     public BrInstr(BasicBlock block1) {
@@ -26,6 +27,8 @@ public class BrInstr extends Instruction {
     }
 
     public void setCond(Value cond) {
+        uses.remove(this.cond);
+        uses.add(cond);
         this.cond = cond;
     }
 

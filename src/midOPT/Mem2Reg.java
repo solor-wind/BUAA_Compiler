@@ -185,6 +185,7 @@ public class Mem2Reg {
             ArrayList<Argument> args = call.getArguments();
             for (int i = 0; i < args.size(); i++) {
                 if (loadValMap.containsKey(args.get(i).value)) {
+                    call.changeUses(i, loadValMap.get(args.get(i).value));
                     args.set(i, new Argument(loadValMap.get(args.get(i).value)));
                 }
             }

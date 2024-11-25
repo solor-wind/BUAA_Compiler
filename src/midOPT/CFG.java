@@ -34,6 +34,14 @@ public class CFG {
             for (BasicBlock block : function.getBlocks()) {
                 Instruction instruction = block.getInstructions().get(block.getInstructions().size() - 1);
                 if (instruction instanceof BrInstr br) {
+                    if (br.getCond() instanceof Literal l) {
+                        if (l.getValue() == 0) {
+                            br.setBlock1(br.getBlock2());
+                            br.setBlock2(null);
+                        } else {
+                            br.setBlock2(null);
+                        }
+                    }
                     nexts.get(block).add(br.getBlock1());
                     prevs.get(br.getBlock1()).add(block);
                     if (br.getBlock2() != null) {

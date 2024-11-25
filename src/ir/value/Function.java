@@ -12,12 +12,21 @@ public class Function extends Value {
     private ArrayList<Argument> arguments = new ArrayList<>();
     private ArrayList<BasicBlock> blocks = new ArrayList<>();
     private HashMap<String, Value> variables = new HashMap<>();//语义分析符号表到函数内符号表达的映射
+    private HashSet<Function> calledFunctions = new HashSet<>();
 
     private HashMap<String, String> tmpMap = new HashMap<>();//从符号表到原符号表的映射
     private HashMap<String, BasicBlock> blockMap = new HashMap<>();//解决分支、循环中的插入问题
 
     public Function(String name, Type type) {
         super(name, type);
+    }
+
+    public void addCalledFunction(Function f) {
+        calledFunctions.add(f);
+    }
+
+    public HashSet<Function> getCalledFunctions() {
+        return calledFunctions;
     }
 
     public ArrayList<Argument> getArguments() {

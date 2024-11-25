@@ -11,6 +11,8 @@ public class StoreInstr extends Instruction {
         super("store");
         this.value = value;
         this.addr = addr;
+        uses.add(value);
+        uses.add(addr);
     }
 
     public Value getValue() {
@@ -18,6 +20,8 @@ public class StoreInstr extends Instruction {
     }
 
     public void setValue(Value value) {
+        uses.remove(this.value);
+        uses.add(value);
         this.value = value;
     }
 

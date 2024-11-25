@@ -12,12 +12,14 @@ public class AllocaInstr extends Instruction {
         super("alloca");
         this.var = var;
         this.size = size;
+        defs.add(var);
     }
 
     public AllocaInstr(Variable var) {
         super("alloca");
         this.var = var;
         this.size = 1;
+        defs.add(var);
     }
 
     public Variable getVar() {

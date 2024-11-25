@@ -18,6 +18,9 @@ public class IcmpInstr extends Instruction {
         this.rv = rv;
         this.res = res;
         this.op = op;
+        uses.add(lv);
+        uses.add(rv);
+        defs.add(res);
     }
 
     public Value getLv() {
@@ -25,6 +28,8 @@ public class IcmpInstr extends Instruction {
     }
 
     public void setLv(Value lv) {
+        uses.remove(this.lv);
+        uses.add(lv);
         this.lv = lv;
     }
 
@@ -33,6 +38,8 @@ public class IcmpInstr extends Instruction {
     }
 
     public void setRv(Value rv) {
+        uses.remove(this.rv);
+        uses.add(rv);
         this.rv = rv;
     }
 

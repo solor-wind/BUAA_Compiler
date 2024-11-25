@@ -16,6 +16,9 @@ public class BinaInstr extends Instruction {
         this.val1 = val1;
         this.val2 = val2;
         this.res = res;
+        defs.add(res);
+        uses.add(val1);
+        uses.add(val2);
     }
 
     @Override
@@ -28,6 +31,8 @@ public class BinaInstr extends Instruction {
     }
 
     public void setVal1(Value val1) {
+        uses.remove(this.val1);
+        uses.add(val1);
         this.val1 = val1;
     }
 
@@ -36,6 +41,8 @@ public class BinaInstr extends Instruction {
     }
 
     public void setVal2(Value val2) {
+        uses.remove(this.val2);
+        uses.add(val2);
         this.val2 = val2;
     }
 
@@ -44,6 +51,8 @@ public class BinaInstr extends Instruction {
     }
 
     public void setRes(Value res) {
+        defs.remove(this.res);
+        defs.add(res);
         this.res = res;
     }
 }
