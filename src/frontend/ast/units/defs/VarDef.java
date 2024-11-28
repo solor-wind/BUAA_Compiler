@@ -202,6 +202,11 @@ public class VarDef {
                 basicBlock.addInstruction(new GetPtrInstr(res, variable, new Literal(i, new IntegerType(32))));
                 basicBlock.addInstruction(new StoreInstr(IRBuilder.changeType(basicBlock, initVals.get(i), type), res));
             }
+            if (type.getSize() == 8 && initVals.size() < arraySym.getLength()) {
+                Variable res = new Variable(IRBuilder.getVarName(), new PointerType(type));
+                basicBlock.addInstruction(new GetPtrInstr(res, variable, new Literal(initVals.size(), new IntegerType(32))));
+                basicBlock.addInstruction(new StoreInstr(IRBuilder.changeType(basicBlock, new Literal(0, new IntegerType(8)), type), res));
+            }
         }
     }
 }

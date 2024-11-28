@@ -298,6 +298,7 @@ public class GraphColorAlloc {
         for (int i = 0; i < blocks.size(); i++) {
             LinkedList<ObjInstr> instrs = blocks.get(i).getInstrs();
             LinkedList<ObjInstr> newInstrs = new LinkedList<>();
+            HashMap<ObjPhyReg, Integer> dirtyRegs = new HashMap<>();//脏寄存器
             for (ObjInstr instr : instrs) {
                 if (instr instanceof ObjBinary binary) {
                     if (binary.getDst().equals(ObjPhyReg.SP)) {
@@ -314,17 +315,30 @@ public class GraphColorAlloc {
                     ObjOperand dst = binary.getDst();//t0
                     ObjOperand src1 = binary.getSrc1();//t1
                     ObjOperand src2 = binary.getSrc2();//t2
-                    if (dst instanceof ObjVirReg) {
-                        binary.setDst(t0);
-                    }
                     if (src1 instanceof ObjVirReg vreg1) {
                         newInstrs.add(new ObjLoad("lw", t1, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg1))));
                         binary.setSrc1(t1);
+                    } else if (src1 instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
                     }
                     if (src2 instanceof ObjVirReg vreg2) {
                         newInstrs.add(new ObjLoad("lw", t2, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg2))));
                         binary.setSrc2(t2);
+                    } else if (src2 instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
                     }
+                    if (dst instanceof ObjVirReg) {
+                        binary.setDst(t0);
+                    } else if (dst instanceof ObjPhyReg phyReg) {
+                        dirtyRegs.remove(phyReg);
+                    }
+
                     newInstrs.add(binary);
                     if (dst instanceof ObjVirReg vreg3) {
                         newInstrs.add(new ObjStore("sw", t0, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg3))));
@@ -333,7 +347,17 @@ public class GraphColorAlloc {
                     if (branch.getReg() instanceof ObjVirReg vreg) {
                         newInstrs.add(new ObjLoad("lw", t0, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg))));
                         branch.setReg(t0);
+                    } else if (branch.getReg() instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
                     }
+                    //进入下一个基本块前恢复脏块
+                    for (ObjPhyReg phyReg : dirtyRegs.keySet()) {
+                        newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                    }
+                    dirtyRegs.clear();
                     newInstrs.add(branch);
                 } else if (instr instanceof ObjJ j) {
                     if (j.getOperand() instanceof ObjVirReg vreg) {
@@ -345,9 +369,17 @@ public class GraphColorAlloc {
                         for (int k = 0; k < usedRegs.size(); k++) {
                             if (usedRegs.get(k).equals(ObjPhyReg.RA) || usedRegs.get(k).equals(ObjPhyReg.SP) || usedRegs.get(k).equals(ObjPhyReg.nameToReg.get("v0"))) {
                                 continue;
+                            } else if (dirtyRegs.containsKey(usedRegs.get(k))) {
+                                continue;
                             }
-                            newInstrs.add(new ObjStore("sw", usedRegs.get(k), ObjPhyReg.SP, new ObjImm(currentFunc.argSize + k * 4)));
+                            newInstrs.add(new ObjStore("sw", usedRegs.get(k), ObjPhyReg.SP, new ObjImm(currentFunc.argSize + usedRegs.get(k).color * 4)));
                         }
+                    } else if (j.getType().equals("j")) {
+                        //进入下一个基本块前恢复脏块
+                        for (ObjPhyReg phyReg : dirtyRegs.keySet()) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.clear();
                     }
                     newInstrs.add(j);
                     if (j.getType().equals("jal")) {
@@ -356,8 +388,17 @@ public class GraphColorAlloc {
                             if (usedRegs.get(k).equals(ObjPhyReg.RA) || usedRegs.get(k).equals(ObjPhyReg.SP) || usedRegs.get(k).equals(ObjPhyReg.nameToReg.get("v0"))) {
                                 continue;
                             }
-                            newInstrs.add(new ObjStore("lw", usedRegs.get(k), ObjPhyReg.SP, new ObjImm(currentFunc.argSize + k * 4)));
+                            if (!dirtyRegs.containsKey(usedRegs.get(k))) {
+                                dirtyRegs.put(usedRegs.get(k), currentFunc.argSize + usedRegs.get(k).color * 4);
+                            }
+                            //newInstrs.add(new ObjStore("lw", usedRegs.get(k), ObjPhyReg.SP, new ObjImm(currentFunc.argSize + k * 4)));
                         }
+//                        for (int k = 0; k < usedRegs.size(); k++) {
+//                            if (usedRegs.get(k).equals(ObjPhyReg.RA) || usedRegs.get(k).equals(ObjPhyReg.SP) || usedRegs.get(k).equals(ObjPhyReg.nameToReg.get("v0"))) {
+//                                continue;
+//                            }
+//                            newInstrs.add(new ObjStore("lw", usedRegs.get(k), ObjPhyReg.SP, new ObjImm(currentFunc.argSize + k * 4)));
+//                        }
                     }
                 } else if (instr instanceof ObjLoad load) {
                     if (blocks.get(i).equals(blocks.get(0))) {
@@ -385,17 +426,29 @@ public class GraphColorAlloc {
                     }
 
                     ObjVirReg virReg = null;
-                    if (load.getDst() instanceof ObjVirReg) {
-                        virReg = (ObjVirReg) load.getDst();
-                        load.setDst(t0);
-                    }
                     if (load.getAddr() instanceof ObjVirReg vreg1) {
                         load.setAddr(t1);
                         newInstrs.add(new ObjLoad("lw", t1, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg1))));
+                    } else if (load.getAddr() instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
                     }
                     if (load.getOffset() instanceof ObjVirReg vreg2) {
                         load.setOffset(t2);
                         newInstrs.add(new ObjLoad("lw", t2, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg2))));
+                    } else if (load.getOffset() instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
+                    }
+                    if (load.getDst() instanceof ObjVirReg) {
+                        virReg = (ObjVirReg) load.getDst();
+                        load.setDst(t0);
+                    } else if (load.getDst() instanceof ObjPhyReg phyReg) {
+                        dirtyRegs.remove(phyReg);
                     }
                     newInstrs.add(load);
                     if (virReg != null) {
@@ -403,13 +456,20 @@ public class GraphColorAlloc {
                     }
                 } else if (instr instanceof ObjMove move) {
                     ObjVirReg vreg1 = null;
-                    if (move.getDst() instanceof ObjVirReg) {
-                        vreg1 = (ObjVirReg) move.getDst();
-                        move.setDst(t0);
-                    }
                     if (move.getSrc() instanceof ObjVirReg vreg2) {
                         move.setSrc(t1);
                         newInstrs.add(new ObjLoad("lw", t1, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg2))));
+                    } else if (move.getSrc() instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
+                    }
+                    if (move.getDst() instanceof ObjVirReg) {
+                        vreg1 = (ObjVirReg) move.getDst();
+                        move.setDst(t0);
+                    } else if (move.getDst() instanceof ObjPhyReg phyReg) {
+                        dirtyRegs.remove(phyReg);
                     }
                     newInstrs.add(move);
                     if (vreg1 != null) {
@@ -419,19 +479,37 @@ public class GraphColorAlloc {
                     if (store.getValue() instanceof ObjVirReg vreg) {
                         store.setValue(t0);
                         newInstrs.add(new ObjLoad("lw", t0, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg))));
+                    } else if (store.getValue() instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
                     }
                     if (store.getPointer() instanceof ObjVirReg vreg1) {
                         store.setPointer(t1);
                         newInstrs.add(new ObjLoad("lw", t1, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg1))));
+                    } else if (store.getPointer() instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
                     }
                     if (store.getOffset() instanceof ObjVirReg vreg2) {
                         store.setOffset(t2);
                         newInstrs.add(new ObjLoad("lw", t2, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(vreg2))));
+                    } else if (store.getOffset() instanceof ObjPhyReg phyReg) {
+                        if (dirtyRegs.containsKey(phyReg)) {
+                            newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
+                        }
+                        dirtyRegs.remove(phyReg);
                     }
                     newInstrs.add(store);
                 } else {
                     newInstrs.add(instr);
                 }
+            }
+            for (ObjPhyReg phyReg : dirtyRegs.keySet()) {
+                newInstrs.add(new ObjLoad("lw", phyReg, sp, new ObjImm(dirtyRegs.get(phyReg))));
             }
             blocks.get(i).resetInstrs(newInstrs);
         }

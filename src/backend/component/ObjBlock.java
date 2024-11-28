@@ -21,8 +21,6 @@ public class ObjBlock {
     public final HashSet<ObjReg> Def = new HashSet<>();
     public HashSet<ObjReg> liveIns = new HashSet<>();
     public HashSet<ObjReg> liveOuts = new HashSet<>();
-    public final ArrayList<ArrayList<ObjReg>> LocalInterfere = new ArrayList<>();
-    public int depth;
 
     public ObjBlock(ObjFunction function) {
         index = blockIndex++;
@@ -75,7 +73,12 @@ public class ObjBlock {
     }
 
     public void addUses(HashSet<ObjReg> regs) {
-        Use.addAll(regs);
+        for (ObjReg reg : regs) {
+            if (!Def.contains(reg)) {
+                Use.add(reg);//在任何定义前，被使用
+            }
+        }
+        //Use.addAll(regs);
     }
 
     public HashSet<ObjReg> getUse() {
@@ -94,32 +97,11 @@ public class ObjBlock {
         return Def;
     }
 
-    public void addFirstInstr(ObjInstr objInstr) {
-        instrs.addFirst(objInstr);
-    }
-
     public void addPreBlock(ObjBlock block) {
-//        if (isBrDest) {
-//            return;
-//        }
         preBlocks.addLast(block);
     }
 
-    public void setPreBlocks(LinkedList<ObjBlock> preBlocks) {
-        this.preBlocks = preBlocks;
-    }
-
-    public void removePreBlock(ObjBlock block) {
-        if (isBrDest) {
-            return;
-        }
-        preBlocks.remove(block);
-    }
-
     public void addNextBlock(ObjBlock block) {
-//        if (isBrDest) {
-//            return;
-//        }
         nextBlocks.addLast(block);
     }
 
@@ -127,24 +109,11 @@ public class ObjBlock {
         this.nextBlocks = nextBlocks;
     }
 
-    public void removeNextBlock(ObjBlock block) {
-        if (isBrDest) {
-            return;
-        }
-        nextBlocks.remove(block);
-    }
-
     public LinkedList<ObjBlock> getPreBlocks() {
-//        if (isBrDest) {
-//            return null;
-//        }
         return preBlocks;
     }
 
     public LinkedList<ObjBlock> getNextBlocks() {
-//        if (isBrDest) {
-//            return null;
-//        }
         return nextBlocks;
     }
 

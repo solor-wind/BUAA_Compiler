@@ -2,9 +2,12 @@ package backend;
 
 import backend.component.ObjModule;
 import backend.process.GraphColorAlloc;
+import backend.process.GraphColorAlloc2;
 import backend.process.LinearRegAlloc;
 import backend.process.ParseIr;
 import ir.value.IRModule;
+import midOPT.CFG;
+import midOPT.DomTree;
 
 import java.io.FileWriter;
 import java.io.IOException;

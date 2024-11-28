@@ -12,7 +12,7 @@ public class ObjFunction {
     private ArrayList<Argument> args = new ArrayList<>();
     private int stackSize = 0;
     public int allocaSize = 0;
-    public int regSize = 104;
+    public int regSize = 128;
     public int argSize = 0;
     private int allocas = 0;
     private ArrayList<ObjPhyReg> usedPhyRegs = new ArrayList<>();
