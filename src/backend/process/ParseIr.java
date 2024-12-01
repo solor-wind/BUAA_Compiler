@@ -218,14 +218,49 @@ public class ParseIr {
                     val1 = val2;
                     val2 = tmp;
                 }
+                if (val2 instanceof ObjImm imm) {
+                    int a = imm.getImmediate();
+                    if (a == 0) {
+                        objBlock.addInstr(new ObjMove("move", res, ObjPhyReg.ZERO));
+                        break;
+                    } else if (a == 1) {
+                        objBlock.addInstr(new ObjMove("move", res, val1));
+                        break;
+                    } else if (a == -1) {
+                        objBlock.addInstr(new ObjBinary("sub", res, ObjPhyReg.ZERO, val1));
+                        break;
+                    } else if (a > 0 && ((a & (a - 1)) == 0)) {
+                        int tmp = -1;
+                        while (a > 0) {
+                            tmp++;
+                            a /= 2;
+                        }
+                        objBlock.addInstr(new ObjBinary("sll", res, val1, new ObjImm(tmp)));
+                        break;
+                    }
+                }
                 objBlock.addInstr(new ObjBinary("mul", res, val1, val2));
                 break;
             case "sdiv":
-                if (val1 instanceof ObjImm) {
+                if (val1 instanceof ObjImm imm) {
+                    if (imm.getImmediate() == 0) {
+                        objBlock.addInstr(new ObjMove("move", res, ObjPhyReg.ZERO));
+                        break;
+                    }
                     ObjVirReg virReg = new ObjVirReg();
                     objBlock.addInstr(new ObjMove("li", virReg, val1));
                     objBlock.addInstr(new ObjBinary("div", res, virReg, val2));
                 } else {
+                    if (val2 instanceof ObjImm imm) {
+                        long a = imm.getImmediate();
+                        if (a == 1) {
+                            objBlock.addInstr(new ObjMove("move", res, val1));
+                            break;
+                        } else if (a == -1) {
+                            objBlock.addInstr(new ObjBinary("sub", res, ObjPhyReg.ZERO, val1));
+                            break;
+                        }
+                    }
                     objBlock.addInstr(new ObjBinary("div", res, val1, val2));
                 }
                 break;
@@ -235,6 +270,13 @@ public class ParseIr {
                     objBlock.addInstr(new ObjMove("li", virReg, val1));
                     objBlock.addInstr(new ObjBinary("sub", res, virReg, val2));
                 } else {
+                    if (val2 instanceof ObjImm imm) {
+                        long a = imm.getImmediate();
+                        if (a == 1 || a == -1) {
+                            objBlock.addInstr(new ObjMove("move", res, ObjPhyReg.ZERO));
+                            break;
+                        }
+                    }
                     objBlock.addInstr(new ObjBinary("rem", res, val1, val2));
                 }
                 break;
