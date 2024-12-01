@@ -123,6 +123,9 @@ public class ParseIr {
         }
         ObjBlock objBlock = new ObjBlock(objFunction);
         objBlock.addInstr(new ObjBinary("addi", ObjPhyReg.SP, ObjPhyReg.SP, new ObjImm(-currentFunction.getStackSize())));
+        if (!objFunction.getName().equals("main")) {
+            objBlock.addInstr(new ObjStore("sw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
+        }
         /*加载参数*/
         for (int i = 0; i < function.getArguments().size(); i++) {
             Argument arg = function.getArguments().get(i);
@@ -330,8 +333,9 @@ public class ParseIr {
          * 再传参数
          * 最后调用
          * */
-        currentBlock.addInstr(new ObjStore("sw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
+
         if (!Backend.graphColor) {
+            currentBlock.addInstr(new ObjStore("sw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
             for (int i = 0; i < 32; i += 4) {
                 currentBlock.addInstr(new ObjStore("sw", ObjPhyReg.regs.get(16 + i / 4), ObjPhyReg.SP, new ObjImm(currentFunction.argSize + i)));
             }
@@ -372,8 +376,8 @@ public class ParseIr {
         }
 
 
-        currentBlock.addInstr(new ObjLoad("lw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
         if (!Backend.graphColor) {
+            currentBlock.addInstr(new ObjLoad("lw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
             for (int i = 0; i < 32; i += 4) {
                 currentBlock.addInstr(new ObjLoad("lw", ObjPhyReg.regs.get(16 + i / 4), ObjPhyReg.SP, new ObjImm(currentFunction.argSize + i)));
             }
@@ -583,6 +587,9 @@ public class ParseIr {
             } else {
                 currentBlock.addInstr(new ObjMove("move", ObjPhyReg.nameToReg.get("v0"), operand));
             }
+        }
+        if (irModule.functions.size() > 1) {
+            currentBlock.addInstr(new ObjStore("lw", ObjPhyReg.RA, ObjPhyReg.SP, new ObjImm(currentFunction.argSize + currentFunction.regSize)));
         }
         currentBlock.addInstr(new ObjBinary("addi", ObjPhyReg.SP, ObjPhyReg.SP, new ObjImm(currentFunction.getStackSize())));
         currentBlock.addInstr(new ObjJ("jr", ObjPhyReg.RA));
