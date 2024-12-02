@@ -455,6 +455,9 @@ public class GraphColorAlloc {
                         newInstrs.add(new ObjStore("sw", t0, sp, new ObjImm(currentFunc.getStackSize() + spilled.get(virReg))));
                     }
                 } else if (instr instanceof ObjMove move) {
+                    if (move.getSrc().equals(move.getDst())) {
+                        continue;
+                    }
                     ObjVirReg vreg1 = null;
                     if (move.getSrc() instanceof ObjVirReg vreg2) {
                         move.setSrc(t1);

@@ -452,6 +452,13 @@ public class Stmt implements BlockItem {
     }
 
     public void addPutstr(String s, BasicBlock basicBlock) {
+        if(s.equals(" ")){
+            basicBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), new Literal(32,new IntegerType(32))));
+            return;
+        } else if (s.equals("\n")) {
+            basicBlock.addInstruction(new CallInstr(null, IRBuilder.getLibFunction("putch"), new Literal(10,new IntegerType(32))));
+            return;
+        }
         if(s.isEmpty()){
             return;
         }
