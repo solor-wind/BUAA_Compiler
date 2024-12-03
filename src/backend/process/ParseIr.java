@@ -198,19 +198,31 @@ public class ParseIr {
                     val1 = val2;
                     val2 = tmp;
                 }
-                if (val2 instanceof ObjImm) {
-                    objBlock.addInstr(new ObjBinary("addi", res, val1, val2));
+                if (val2 instanceof ObjImm imm) {
+                    if (imm.getImmediate() == 0) {
+                        objBlock.addInstr(new ObjMove("move", res, val1));
+                    } else {
+                        objBlock.addInstr(new ObjBinary("addi", res, val1, val2));
+                    }
                 } else {
                     objBlock.addInstr(new ObjBinary("add", res, val1, val2));
                 }
                 break;
             case "sub":
-                if (val1 instanceof ObjImm) {
-                    ObjVirReg virReg = new ObjVirReg();
-                    objBlock.addInstr(new ObjMove("li", virReg, val1));
-                    objBlock.addInstr(new ObjBinary("sub", res, virReg, val2));
+                if (val1 instanceof ObjImm imm) {
+                    if (imm.getImmediate() == 0) {
+                        objBlock.addInstr(new ObjBinary("sub", res, ObjPhyReg.ZERO, val2));
+                    } else {
+                        ObjVirReg virReg = new ObjVirReg();
+                        objBlock.addInstr(new ObjMove("li", virReg, val1));
+                        objBlock.addInstr(new ObjBinary("sub", res, virReg, val2));
+                    }
                 } else if (val2 instanceof ObjImm objImm) {
-                    objBlock.addInstr(new ObjBinary("addi", res, val1, new ObjImm(-objImm.getImmediate())));
+                    if (objImm.getImmediate() == 0) {
+                        objBlock.addInstr(new ObjMove("move", res, val1));
+                    } else {
+                        objBlock.addInstr(new ObjBinary("addi", res, val1, new ObjImm(-objImm.getImmediate())));
+                    }
                 } else {
                     objBlock.addInstr(new ObjBinary("sub", res, val1, val2));
                 }
